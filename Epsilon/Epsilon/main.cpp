@@ -11,6 +11,7 @@ using namespace std;
 
 int main() {  
     Clock dt;
+    
     Vector2f normal(0, 0);
     float depth = 0;
     float drag = 0.99f;
@@ -20,6 +21,8 @@ int main() {
     Vector2f acceleration2(0, 0);
     Vector2f pos(0, 0);
     Vector2f posb(100, 100);
+    Vector2f posc(300, 300);
+    Vector2f posd(500, 400);
     EpsilonBody circle = EpsilonBody::CreateCircleBody(pos, 1, 1, 10, false);
     CircleShape crc(circle.radius);
     crc.setPosition(circle.position);
@@ -28,6 +31,14 @@ int main() {
     CircleShape crc2(circle2.radius);
     crc2.setPosition(circle2.position);
     crc2.setOrigin({ circle2.radius / 2 ,circle2.radius / 2 });
+    EpsilonBody box1 = EpsilonBody::CreateBoxBody(posc, 1, 1, 100, 40, false);
+    RectangleShape bx1({ box1.width,box1.height });
+    bx1.setPosition(box1.position);
+    bx1.setOrigin({ box1.width / 2.f,box1.height / 2.f });
+    EpsilonBody box2 = EpsilonBody::CreateBoxBody(posd, 1, 1, 100, 40, false);
+    RectangleShape bx2({ box2.width,box2.height });
+    bx2.setPosition(box2.position);
+    bx2.setOrigin({ box2.width / 2.f,box2.height / 2.f });
     RenderWindow window(VideoMode({ 1280, 720 }), "mywindow");
     window.setFramerateLimit(320);   
     while (window.isOpen()) {   
@@ -41,6 +52,8 @@ int main() {
         }  
         crc.setPosition(circle.position);
         crc2.setPosition(circle2.position);
+        bx1.setPosition(box1.position);
+        bx2.setPosition(box2.position);
         if (Keyboard::isKeyPressed(Keyboard::Key::A)) {
             acceleration.x = -.1f;
         }
@@ -60,11 +73,24 @@ int main() {
             acceleration = acceleration * 10.f;
             circle2.updateMovement(circle2.position, deltatime, velocity2, acceleration2, drag);
         }
-        circle.updateMovement(circle.position, deltatime, velocity, acceleration, drag);
-
+        if (Collisions::IntersectPolygons(box1.GetTransformedVertices(), box2.GetTransformedVertices())) {
+            bx1.setFillColor(Color::Blue);
+        }
+        else {
+            bx1.setFillColor(Color::White);
+        }
+        box1.updateMovement(box1.position, deltatime, velocity, acceleration, drag);
+        box1.UpdateRotation(1.57 * d.asSeconds());
+        box2.UpdateRotation(1.57 * d.asSeconds());
+        Angle ang = radians(box1.rotation);
+        Angle ang2 = radians(box2.rotation);
+        bx1.setRotation(ang);
+        bx2.setRotation(ang2);
         window.clear(Color::Black);
         window.draw(crc);
         window.draw(crc2);
+        window.draw(bx1);
+        window.draw(bx2);
         window.display();
         acceleration = Vector2f({ 0,0 });
     }

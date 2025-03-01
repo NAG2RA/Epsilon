@@ -19,6 +19,19 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 	rotationalVelocity(0.f),
 	linearVelocity(0, 0)
 {
+	if (shapetype == Shapetype::box) 
+	{
+		vertices = GetBoxVertices(width, height);
+		transformedVertices.resize(vertices.size());
+		boxtriangles = GetBoxTriangles();
+	}
+	else
+	{
+		boxtriangles = {};
+		vertices = {};
+		transformedVertices = {};
+	}
+	isTransformUpdated = true;
 }
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody& body)
@@ -108,5 +121,65 @@ Vector2f EpsilonBody::updateMovement(Vector2f& position, float& dt, Vector2f& ve
 	velocity *= drag;
 	
 	position += velocity * dt * converter;
+	isTransformUpdated = false;
 	return position;
+}
+
+vector<Vector2f> EpsilonBody::GetBoxVertices(float width, float height)
+{
+	vector<Vector2f> vertices(4);
+	float left = -width/2.f;
+	float right = left+width;
+	float bottom = height/2.f;
+	float top = bottom-height;
+	vertices[0] = Vector2f(left,top);
+	vertices[1] = Vector2f(right, top);
+	vertices[2] = Vector2f(right, bottom);
+	vertices[3] = Vector2f(left, bottom);
+	return vertices;
+}
+
+vector<int> EpsilonBody::GetBoxTriangles()
+{
+	vector<int> triangles(6);
+	triangles[0] = 0;
+	triangles[1] = 1;
+	triangles[2] = 2;
+	triangles[3] = 0;
+	triangles[4] = 2;
+	triangles[5] = 3;
+	return triangles;
+}
+
+Vector2f EpsilonBody::Transform(Vector2f position,Vector2f endposition, float angle)
+{
+	float rx = cos(angle) * position.x - sin(angle) * position.y;
+	float ry = sin(angle) * position.x + cos(angle) * position.y;
+	float tx = rx + endposition.x;
+	float ty =  ry+endposition.y;
+	return Vector2f(tx,ty);
+}
+
+void EpsilonBody::MoveTo(Vector2f& pos)
+{
+	position = pos;
+	isTransformUpdated = false;
+}
+
+void EpsilonBody::UpdateRotation(float angle)
+{
+	rotation += angle;
+	isTransformUpdated = false;
+}
+
+vector<Vector2f> EpsilonBody::GetTransformedVertices()
+{
+	if (!isTransformUpdated) {
+		Vector2f endposition = position;
+		for (size_t i = 0; i < vertices.size(); i++) {
+			Vector2f v = vertices[i];
+			transformedVertices[i] = Transform(v, endposition, rotation);
+		}
+	}
+	return transformedVertices;
 }

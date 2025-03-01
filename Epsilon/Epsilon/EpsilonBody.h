@@ -21,11 +21,21 @@ public:
 	Vector2f position, linearVelocity;
 	bool isStatic;
 	Shapetype shapetype;
+	vector<Vector2f> vertices;
+	vector<Vector2f> transformedVertices;
+	vector<int> boxtriangles;
+	bool isTransformUpdated;
 	EpsilonBody(Vector2f position, float density, float mass, float restitution, float area, float radius, float width,
 		float height, bool isStatic, Shapetype shapetype);
 	EpsilonBody CreateNewBody(EpsilonBody& body);
 	static EpsilonBody CreateCircleBody(Vector2f position, float density, float restitution, float radius, bool isStatic);
 	static EpsilonBody CreateBoxBody(Vector2f position, float density, float restitution, float width, float height, bool isStatic);
 	Vector2f updateMovement(Vector2f& position, float& dt, Vector2f& velocity, Vector2f& acceleration, float& drag);
+	vector<Vector2f> GetBoxVertices(float width, float height);
+	vector<int> GetBoxTriangles();
+	Vector2f Transform(Vector2f position,Vector2f endposition, float angle);
+	void MoveTo(Vector2f& pos);
+	void UpdateRotation(float angle);
+	vector<Vector2f> GetTransformedVertices();
 };
 
