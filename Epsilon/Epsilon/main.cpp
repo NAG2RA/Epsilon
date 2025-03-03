@@ -26,16 +26,16 @@ int main() {
     EpsilonBody circle = EpsilonBody::CreateCircleBody(pos, 1, 1, 10, false);
     CircleShape crc(circle.radius);
     crc.setPosition(circle.position);
-    crc.setOrigin({ circle.radius / 2 ,circle.radius / 2 });
+    crc.setOrigin({ circle.radius,circle.radius});
     EpsilonBody circle2 = EpsilonBody::CreateCircleBody(posb, 1, 1, 10, false);
     CircleShape crc2(circle2.radius);
     crc2.setPosition(circle2.position);
-    crc2.setOrigin({ circle2.radius / 2 ,circle2.radius / 2 });
+    crc2.setOrigin({ circle2.radius,circle2.radius});
     EpsilonBody box1 = EpsilonBody::CreateBoxBody(posc, 1, 1, 100, 40, false);
     RectangleShape bx1({ box1.width,box1.height });
     bx1.setPosition(box1.position);
     bx1.setOrigin({ box1.width / 2.f,box1.height / 2.f });
-    EpsilonBody box2 = EpsilonBody::CreateBoxBody(posd, 1, 1, 100, 40, false);
+    EpsilonBody box2 = EpsilonBody::CreateBoxBody(posd, 1, 1, 150, 20, false);
     RectangleShape bx2({ box2.width,box2.height });
     bx2.setPosition(box2.position);
     bx2.setOrigin({ box2.width / 2.f,box2.height / 2.f });
@@ -66,6 +66,7 @@ int main() {
         if (Keyboard::isKeyPressed(Keyboard::Key::S)) {
             acceleration.y = .1f;
         }
+        
         if (Collisions::IntersectCircles(circle.radius, circle2.radius, circle.position, circle2.position, normal, depth)) 
         {
             velocity = -normal * (float)(depth/2);
@@ -73,19 +74,19 @@ int main() {
             acceleration = acceleration * 10.f;
             circle2.updateMovement(circle2.position, deltatime, velocity2, acceleration2, drag);
         }
-        if (Collisions::IntersectPolygons(box1.GetTransformedVertices(), box2.GetTransformedVertices())) {
-            bx1.setFillColor(Color::Blue);
+        if (Collisions::IntersectPolygons(box1.GetTransformedVertices(), box2.GetTransformedVertices(),normal,depth)) {
+            velocity = -normal * (float)(depth / 2);
+            velocity2 = normal * (float)(depth / 2);
+            acceleration = acceleration * 10.f;
+            box2.updateMovement(box2.position, deltatime, velocity2, acceleration2, drag);
         }
-        else {
-            bx1.setFillColor(Color::White);
+        if (Collisions::IntersectPolygonAndCircle(circle2.position, circle2.radius, box1.GetTransformedVertices(), normal, depth)) {
+            velocity = normal * (float)(depth / 2);
+            velocity2 = -normal * (float)(depth / 2);
+            acceleration = acceleration * 10.f;
+            circle2.updateMovement(circle2.position, deltatime, velocity2, acceleration2, drag);
         }
-        box1.updateMovement(box1.position, deltatime, velocity, acceleration, drag);
-        box1.UpdateRotation(1.57 * d.asSeconds());
-        box2.UpdateRotation(1.57 * d.asSeconds());
-        Angle ang = radians(box1.rotation);
-        Angle ang2 = radians(box2.rotation);
-        bx1.setRotation(ang);
-        bx2.setRotation(ang2);
+        circle.updateMovement(circle.position, deltatime, velocity, acceleration, drag);
         window.clear(Color::Black);
         window.draw(crc);
         window.draw(crc2);

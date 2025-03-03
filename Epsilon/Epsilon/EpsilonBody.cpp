@@ -31,7 +31,7 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 		vertices = {};
 		transformedVertices = {};
 	}
-	isTransformUpdated = true;
+	isTransformUpdated = false;
 }
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody& body)
@@ -114,6 +114,7 @@ EpsilonBody EpsilonBody::CreateBoxBody(Vector2f position, float density, float r
 }
 Vector2f EpsilonBody::updateMovement(Vector2f& position, float& dt, Vector2f& velocity, Vector2f& acceleration, float& drag)
 {
+	isTransformUpdated = false;
 	float converter = (float)1 / (float)10000;
 
 	velocity += acceleration * dt * converter;
@@ -121,7 +122,7 @@ Vector2f EpsilonBody::updateMovement(Vector2f& position, float& dt, Vector2f& ve
 	velocity *= drag;
 	
 	position += velocity * dt * converter;
-	isTransformUpdated = false;
+	
 	return position;
 }
 
