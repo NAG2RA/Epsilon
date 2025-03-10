@@ -16,9 +16,9 @@ class EpsilonBody
 {
 public:
 	
-	float rotation, rotationalVelocity;
+	float rotation, rotationalVelocity, drag;
 	const float density, mass, restitution, area, radius, width, height;
-	Vector2f position, linearVelocity;
+	Vector2f position, linearVelocity, acceleration;
 	bool isStatic;
 	Shapetype shapetype;
 	vector<Vector2f> vertices;
@@ -27,10 +27,11 @@ public:
 	bool isTransformUpdated;
 	EpsilonBody(Vector2f position, float density, float mass, float restitution, float area, float radius, float width,
 		float height, bool isStatic, Shapetype shapetype);
-	EpsilonBody CreateNewBody(EpsilonBody& body);
+	static EpsilonBody CreateNewBody(EpsilonBody body);
 	static EpsilonBody CreateCircleBody(Vector2f position, float density, float restitution, float radius, bool isStatic);
 	static EpsilonBody CreateBoxBody(Vector2f position, float density, float restitution, float width, float height, bool isStatic);
-	Vector2f updateMovement(Vector2f& position, float& dt, Vector2f& velocity, Vector2f& acceleration, float& drag);
+	void updateMovement(float& dt);
+	void Move(Vector2f amount);
 	vector<Vector2f> GetBoxVertices(float width, float height);
 	vector<int> GetBoxTriangles();
 	Vector2f Transform(Vector2f position,Vector2f endposition, float angle);

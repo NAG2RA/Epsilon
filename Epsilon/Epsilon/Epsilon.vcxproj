@@ -21,11 +21,13 @@
   <ItemGroup>
     <ClCompile Include="Collisions.cpp" />
     <ClCompile Include="EpsilonBody.cpp" />
+    <ClCompile Include="EpsilonWorld.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Collisions.h" />
     <ClInclude Include="EpsilonBody.h" />
+    <ClInclude Include="EpsilonWorld.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

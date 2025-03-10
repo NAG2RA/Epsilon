@@ -17,7 +17,9 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 	shapetype(shapetype),
 	rotation(0.f),
 	rotationalVelocity(0.f),
-	linearVelocity(0, 0)
+	linearVelocity(0, 0),
+	drag(0.99f),
+	acceleration(0,0)
 {
 	if (shapetype == Shapetype::box) 
 	{
@@ -34,7 +36,7 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 	isTransformUpdated = false;
 }
 
-EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody& body)
+EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody body)
 {
 	return EpsilonBody(body.position,body.density,body.mass,body.restitution,body.area,body.radius,body.width,body.height,body.isStatic,body.shapetype);
 }
@@ -112,18 +114,24 @@ EpsilonBody EpsilonBody::CreateBoxBody(Vector2f position, float density, float r
 	EpsilonBody bd(position, density, mass, restitution, area, 0.f, width, height, false, Shapetype::box);
 	return bd;
 }
-Vector2f EpsilonBody::updateMovement(Vector2f& position, float& dt, Vector2f& velocity, Vector2f& acceleration, float& drag)
+void EpsilonBody::updateMovement(float& dt)
 {
+	
 	isTransformUpdated = false;
 	float converter = (float)1 / (float)10000;
 
-	velocity += acceleration * dt * converter;
+	linearVelocity += acceleration * dt * converter;
 
-	velocity *= drag;
+	linearVelocity *= drag;
 	
-	position += velocity * dt * converter;
+	position += linearVelocity * dt * converter;
 	
-	return position;
+}
+
+void EpsilonBody::Move(Vector2f amount)
+{
+	isTransformUpdated = false;
+	position += amount;
 }
 
 vector<Vector2f> EpsilonBody::GetBoxVertices(float width, float height)
