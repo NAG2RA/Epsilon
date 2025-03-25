@@ -19,8 +19,15 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 	rotationalVelocity(0.f),
 	linearVelocity(0, 0),
 	drag(0.99f),
-	acceleration(0,0)
+	force(0,0),
+	aabb(0,0,0,0)
 {
+	if (!isStatic) {
+		InverseMass = (float)1 / mass;
+	}
+	else {
+		InverseMass = 0;
+	}
 	if (shapetype == Shapetype::box) 
 	{
 		vertices = GetBoxVertices(width, height);
@@ -34,6 +41,7 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 		transformedVertices = {};
 	}
 	isTransformUpdated = false;
+	isAABBUpdated = false;
 }
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody body)
@@ -72,9 +80,8 @@ EpsilonBody EpsilonBody::CreateCircleBody(Vector2f position, float density, floa
 	{
 		restitution = 0;
 	}
-	
-	float mass = area * density;
-	EpsilonBody bd(position, density, mass, restitution, area, radius, 0.f, 0.f, false, Shapetype::circle);
+	float mass = area * (float)density / 10.f;
+	EpsilonBody bd(position, density, mass, restitution, area, radius, 0.f, 0.f, isStatic, Shapetype::circle);
 	return bd;
 }
 
@@ -109,28 +116,30 @@ EpsilonBody EpsilonBody::CreateBoxBody(Vector2f position, float density, float r
 	{
 		restitution = 0;
 	}
-
-	float mass = area * density;
-	EpsilonBody bd(position, density, mass, restitution, area, 0.f, width, height, false, Shapetype::box);
+	float mass = area * (float)density/10.f;
+	EpsilonBody bd(position, density, mass, restitution, area, 0.f, width, height, isStatic, Shapetype::box);
 	return bd;
 }
-void EpsilonBody::updateMovement(float& dt)
+void EpsilonBody::updateMovement(float& dt, Vector2f gravity)
 {
-	
+	if (isStatic) {
+		return;
+	}
+	AddForce(gravity);
+	Vector2f acceleration = force / mass;
 	isTransformUpdated = false;
+	isAABBUpdated = false;
 	float converter = (float)1 / (float)10000;
-
 	linearVelocity += acceleration * dt * converter;
-
 	linearVelocity *= drag;
-	
 	position += linearVelocity * dt * converter;
-	
+	force = Vector2f({ 0,0 });
 }
 
 void EpsilonBody::Move(Vector2f amount)
 {
 	isTransformUpdated = false;
+	isAABBUpdated = false;
 	position += amount;
 }
 
@@ -173,12 +182,19 @@ void EpsilonBody::MoveTo(Vector2f& pos)
 {
 	position = pos;
 	isTransformUpdated = false;
+	isAABBUpdated = false;
 }
 
 void EpsilonBody::UpdateRotation(float angle)
 {
 	rotation += angle;
 	isTransformUpdated = false;
+	isAABBUpdated = false;
+}
+
+void EpsilonBody::AddForce(Vector2f amount)
+{
+	force += amount;
 }
 
 vector<Vector2f> EpsilonBody::GetTransformedVertices()
@@ -191,4 +207,34 @@ vector<Vector2f> EpsilonBody::GetTransformedVertices()
 		}
 	}
 	return transformedVertices;
+}
+
+AABB EpsilonBody::GetAABB()
+{
+	if (!isAABBUpdated) {
+		float minX = FLT_MAX;
+		float minY = FLT_MAX;
+		float maxX = FLT_MIN;
+		float maxY = FLT_MIN;
+		if (shapetype == box) {
+			vector<Vector2f> vertices = GetTransformedVertices();
+			for (size_t i = 0; i < vertices.size(); i++) {
+				Vector2f v = vertices[i];
+				if (v.x < minX) { minX = v.x; }
+				if (v.x > maxX) { maxX = v.x; }
+				if (v.y < minY) { minY = v.y; }
+				if (v.y > maxY) { maxY = v.y; }
+
+			}
+		}
+		else if (shapetype == circle) {
+			minX = position.x - radius;
+			maxX = position.x + radius;
+			minY = position.y - radius;
+			maxY = position.y + radius;
+		}
+		aabb = AABB(minX, maxX, minY, maxY);
+	}
+	isAABBUpdated = true;
+	return aabb;
 }

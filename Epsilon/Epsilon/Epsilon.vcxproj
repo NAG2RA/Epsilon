@@ -19,12 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AABB.cpp" />
     <ClCompile Include="Collisions.cpp" />
     <ClCompile Include="EpsilonBody.cpp" />
     <ClCompile Include="EpsilonWorld.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.h" />
     <ClInclude Include="Collisions.h" />
     <ClInclude Include="EpsilonBody.h" />
     <ClInclude Include="EpsilonWorld.h" />

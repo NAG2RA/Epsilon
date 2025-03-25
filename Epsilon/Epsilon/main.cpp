@@ -8,6 +8,7 @@
 #include"EpsilonBody.h"
 #include"Collisions.h"
 #include"EpsilonWorld.h"
+#include"AABB.h"
 using namespace sf;
 using namespace std;
 
@@ -20,62 +21,65 @@ int main() {
     float drag = 0.99f;
     RenderWindow window(VideoMode({ 1280, 720 }), "mywindow");
     window.setFramerateLimit(320);   
-    for (size_t i = 0; i < 10; i++) {
-        int randint = rand() % 2;
-        float posX = rand() % 501;
-        float posY = rand() % 501;
-        if (randint == 0) {
-            world.AddBody(EpsilonBody::CreateCircleBody(Vector2f(posX, posY), 1, 1, 20, false));
-        }
-        else {
-            world.AddBody(EpsilonBody::CreateBoxBody(Vector2f(posX, posY), 1, 1, 50, 50, false));
-        }
-    }
+    world.AddBody(EpsilonBody::CreateBoxBody(Vector2f(100, 500), 0.5f, 0.5f, 1000, 50, true));
+    RectangleShape r({ 1000,50 });
+    r.setPosition(world.bodyList[0].position);
+    r.setOrigin({ 500,25 });
+    bool ispressed = false;
     while (window.isOpen()) {   
         Time d = dt.restart();
         float deltatime = d.asMicroseconds();
         while (const optional event = window.pollEvent())
         {
-            // "close requested" event: we close the window
             if (event->is<sf::Event::Closed>())
                 window.close();
-        }  
-        if (Keyboard::isKeyPressed(Keyboard::Key::A)) {
-            world.bodyList[0].acceleration.x = -.1;
+        } 
+        if (Mouse::isButtonPressed(Mouse::Button::Left)) {
+            if (!ispressed) {
+                Vector2f pos = static_cast<Vector2f>(Mouse::getPosition(window));
+                world.AddBody(EpsilonBody::CreateBoxBody(pos, 0.5f, 0.5f, 50, 50, false));
+            }
+            
+            ispressed = true;
         }
-        if (Keyboard::isKeyPressed(Keyboard::Key::D)) {
-            world.bodyList[0].acceleration.x = .1;
+        else if (Mouse::isButtonPressed(Mouse::Button::Right)) {
+
+            if (!ispressed) {
+                Vector2f pos = static_cast<Vector2f>(Mouse::getPosition(window));
+                world.AddBody(EpsilonBody::CreateCircleBody(pos, 0.5f, 0.5f, 25, false));
+            }
+            ispressed = true;
         }
-        if (Keyboard::isKeyPressed(Keyboard::Key::W)) {
-            world.bodyList[0].acceleration.y = -.1;
+        else {
+            ispressed = false;
         }
-        if (Keyboard::isKeyPressed(Keyboard::Key::S)) {
-            world.bodyList[0].acceleration.y = .1;
-        }
+        r.setPosition(world.bodyList[0].position);
         world.Update(deltatime);
-        world.bodyList[0].updateMovement(deltatime);
-        
         window.clear(Color::Black);
-        for (size_t i = 0; i < world.bodyList.size(); i++) {
+        for (size_t i = 1; i < world.bodyList.size(); i++) {
             if (world.bodyList[i].shapetype == box) {
-                RectangleShape r({ 50,50 });
-                r.setPosition(world.bodyList[i].position);
-                r.setOrigin({ 25,25 });
-                window.draw(r);
+                RectangleShape rc({ 50,50 });
+                rc.setOrigin({ 25,25 });
+                rc.setPosition(world.bodyList[i].position);  
+                window.draw(rc);
+                
             }
             else {
-                CircleShape c(20);
+                CircleShape c(25);
+                c.setOrigin({ 25,25 });
                 c.setPosition(world.bodyList[i].position);
-                c.setOrigin({ 20,20 });
                 window.draw(c);
             }
-            if (i == 0) {
-                continue;
+            AABB box = world.bodyList[i].GetAABB();
+            if (box.min.y > 720) {
+                world.RemoveBody(i);
             }
-            world.bodyList[i].updateMovement(deltatime);
+            
         }
+        
+        window.draw(r);
         window.display();
-        world.bodyList[0].acceleration = Vector2f({ 0,0 });
     }
+   
     return 0;
 }
