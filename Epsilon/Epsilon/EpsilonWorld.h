@@ -5,8 +5,10 @@
 #include<iostream>
 #include<vector>
 #include<cmath>
+#include<tuple>
 #include"EpsilonBody.h"
 #include"Collisions.h"
+#include"CollisionManifold.h"
 class EpsilonWorld
 {
 public:
@@ -15,11 +17,17 @@ public:
 	float depth;
 	EpsilonWorld();
 	vector<EpsilonBody> bodyList;
+	vector<tuple<size_t,size_t>> contactPairs;
 	void AddBody(EpsilonBody body);
 	void RemoveBody(int index);
 	bool GetBody(float index, EpsilonBody& body);
-	void Update(float dt);
-	bool Collide(EpsilonBody bodyA, EpsilonBody bodyB, Vector2f& normal, float& depth);
-	void ResolveCollison(EpsilonBody& bodyA, EpsilonBody& bodyB, Vector2f normal, float& depth);
+	void Update(float dt, int iterations);
+	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, Vector2f mtv);
+	void BroadPhase();
+	void NarrowPhase();
+	void UpdateMovement(float dt, int iterations);
+	void ResolveCollisonBasic(CollisionManifold& manifold);
+	void ResolveCollisonWithRotation(CollisionManifold& manifold);
+	void ResolveCollisonWithRotationAndFriction(CollisionManifold& manifold);
 };
 

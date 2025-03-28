@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AABB.cpp" />
+    <ClCompile Include="CollisionManifold.cpp" />
     <ClCompile Include="Collisions.cpp" />
     <ClCompile Include="EpsilonBody.cpp" />
     <ClCompile Include="EpsilonWorld.cpp" />
@@ -27,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AABB.h" />
+    <ClInclude Include="CollisionManifold.h" />
     <ClInclude Include="Collisions.h" />
     <ClInclude Include="EpsilonBody.h" />
     <ClInclude Include="EpsilonWorld.h" />

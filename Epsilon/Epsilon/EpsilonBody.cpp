@@ -3,8 +3,8 @@ float minArea = 0.01f * 0.01f;
 float maxArea = 64 * 64;
 float minDensity = 0.5f;
 float maxDensity = 21.4f;
-EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float restitution, float area, float radius, float width,
-	float height, bool isStatic, Shapetype shapetype)
+EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float inertia, float restitution, float area, float radius, float width,
+	float height, vector<Vector2f> vertices, bool isStatic, Shapetype shapetype)
 	:position(position),
 	density(density),
 	mass(mass),
@@ -15,28 +15,25 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 	height(height),
 	isStatic(isStatic),
 	shapetype(shapetype),
-	rotation(0.f),
-	rotationalVelocity(0.f),
+	angle(0.f),
+	angularVelocity(0.f),
 	linearVelocity(0, 0),
-	drag(0.99f),
-	force(0,0),
-	aabb(0,0,0,0)
+	force(0, 0),
+	aabb(0, 0, 0, 0),
+	inertia(inertia),
+	inverseMass(mass > 0 ? (float)1 / mass : 0),
+	inverseInertia(inertia > 0 ? (float)1 / inertia : 0),
+	vertices(vertices),
+	dynamicFriction(0.4f),
+	staticFriction(0.6f)
 {
-	if (!isStatic) {
-		InverseMass = (float)1 / mass;
-	}
-	else {
-		InverseMass = 0;
-	}
 	if (shapetype == Shapetype::box) 
 	{
 		vertices = GetBoxVertices(width, height);
 		transformedVertices.resize(vertices.size());
-		boxtriangles = GetBoxTriangles();
 	}
 	else
 	{
-		boxtriangles = {};
 		vertices = {};
 		transformedVertices = {};
 	}
@@ -46,7 +43,7 @@ EpsilonBody::EpsilonBody(Vector2f position, float density, float mass, float res
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody body)
 {
-	return EpsilonBody(body.position,body.density,body.mass,body.restitution,body.area,body.radius,body.width,body.height,body.isStatic,body.shapetype);
+	return EpsilonBody(body.position,body.density,body.mass, body.inertia, body.restitution,body.area,body.radius,body.width,body.height, body.vertices, body.isStatic,body.shapetype);
 }
 
 EpsilonBody EpsilonBody::CreateCircleBody(Vector2f position, float density, float restitution, float radius, bool isStatic)
@@ -80,8 +77,17 @@ EpsilonBody EpsilonBody::CreateCircleBody(Vector2f position, float density, floa
 	{
 		restitution = 0;
 	}
-	float mass = area * (float)density / 10.f;
-	EpsilonBody bd(position, density, mass, restitution, area, radius, 0.f, 0.f, isStatic, Shapetype::circle);
+	float mass;
+	float inertia;
+	if (isStatic) {
+		mass = 0;
+		inertia = 0;
+	}
+	else {
+		mass = area * (float)density;
+		inertia = (1.f / 2.f) * mass * radius * radius;
+	}
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic, Shapetype::circle);
 	return bd;
 }
 
@@ -116,23 +122,34 @@ EpsilonBody EpsilonBody::CreateBoxBody(Vector2f position, float density, float r
 	{
 		restitution = 0;
 	}
-	float mass = area * (float)density/10.f;
-	EpsilonBody bd(position, density, mass, restitution, area, 0.f, width, height, isStatic, Shapetype::box);
+	float mass;
+	float inertia;
+	if (isStatic) {
+		mass = 0;
+		inertia = 0;
+	}
+	else {
+		mass = area * (float)density;
+		inertia = (1.f / 12.f) * mass * (width * width + height * height);
+	}
+	vector<Vector2f> vertices = GetBoxVertices(width,height);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, width, height, vertices, isStatic, Shapetype::box);
 	return bd;
 }
-void EpsilonBody::updateMovement(float& dt, Vector2f gravity)
+void EpsilonBody::updateMovement(float dt, Vector2f gravity,int iterations)
 {
 	if (isStatic) {
 		return;
 	}
-	AddForce(gravity);
+	dt = dt / (float)iterations;
 	Vector2f acceleration = force / mass;
+	acceleration += gravity;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
-	float converter = (float)1 / (float)10000;
-	linearVelocity += acceleration * dt * converter;
-	linearVelocity *= drag;
-	position += linearVelocity * dt * converter;
+	float converter = (float)1 / (float)100;
+	linearVelocity += acceleration*dt*converter;
+	angle += angularVelocity * dt*converter;
+	position += linearVelocity * dt*converter;
 	force = Vector2f({ 0,0 });
 }
 
@@ -157,17 +174,7 @@ vector<Vector2f> EpsilonBody::GetBoxVertices(float width, float height)
 	return vertices;
 }
 
-vector<int> EpsilonBody::GetBoxTriangles()
-{
-	vector<int> triangles(6);
-	triangles[0] = 0;
-	triangles[1] = 1;
-	triangles[2] = 2;
-	triangles[3] = 0;
-	triangles[4] = 2;
-	triangles[5] = 3;
-	return triangles;
-}
+
 
 Vector2f EpsilonBody::Transform(Vector2f position,Vector2f endposition, float angle)
 {
@@ -187,7 +194,7 @@ void EpsilonBody::MoveTo(Vector2f& pos)
 
 void EpsilonBody::UpdateRotation(float angle)
 {
-	rotation += angle;
+	angle += angle;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
 }
@@ -203,7 +210,7 @@ vector<Vector2f> EpsilonBody::GetTransformedVertices()
 		Vector2f endposition = position;
 		for (size_t i = 0; i < vertices.size(); i++) {
 			Vector2f v = vertices[i];
-			transformedVertices[i] = Transform(v, endposition, rotation);
+			transformedVertices[i] = Transform(v, endposition, angle);
 		}
 	}
 	return transformedVertices;
