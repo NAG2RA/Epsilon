@@ -1,6 +1,6 @@
 #include "CollisionManifold.h"
 
-CollisionManifold::CollisionManifold(EpsilonBody& bA, EpsilonBody& bB, Vector2f c1, Vector2f c2, Vector2f& n, float& d, int cCount)
+CollisionManifold::CollisionManifold(EpsilonBody& bA, EpsilonBody& bB, EpsilonVector c1, EpsilonVector c2, EpsilonVector& n, float& d, int cCount)
 	:bodyA(bA),
 	bodyB(bB),
 	contact1(c1),

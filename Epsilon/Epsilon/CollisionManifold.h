@@ -6,6 +6,7 @@
 #include<vector>
 #include<cmath>
 #include"EpsilonBody.h"
+#include"EpsilonVector.h"
 using namespace sf;
 using namespace std;
 class CollisionManifold
@@ -13,11 +14,11 @@ class CollisionManifold
 public:
 	EpsilonBody& bodyA;
 	EpsilonBody& bodyB;
-	Vector2f contact1;
-	Vector2f contact2;
-	Vector2f normal;
+	EpsilonVector contact1;
+	EpsilonVector contact2;
+	EpsilonVector normal;
 	float depth;
 	int contactCount;
-	CollisionManifold(EpsilonBody& bA, EpsilonBody& bB, Vector2f c1, Vector2f c2, Vector2f& n, float& d, int cCount);
+	CollisionManifold(EpsilonBody& bA, EpsilonBody& bB, EpsilonVector c1, EpsilonVector c2, EpsilonVector& n, float& d, int cCount);
 };
 

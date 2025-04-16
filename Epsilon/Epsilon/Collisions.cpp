@@ -1,12 +1,12 @@
 #include "Collisions.h"
 
-float Collisions::Distance(Vector2f a, Vector2f b)
+float Collisions::Distance(EpsilonVector a, EpsilonVector b)
 {
     float dx = a.x - b.x;
     float dy = a.y - b.y;
     return sqrt(dx*dx+dy*dy);
 }
-float Collisions::DistanceSquared(Vector2f a, Vector2f b)
+float Collisions::DistanceSquared(EpsilonVector a, EpsilonVector b)
 {
     float dx = a.x - b.x;
     float dy = a.y - b.y;
@@ -16,11 +16,11 @@ bool Collisions::NearlyEqual(float a, float b) {
     float nearlyEqual = 0.0005f;
     return abs(a - b) < nearlyEqual;
 }
-bool Collisions::NearlyEqual(Vector2f a, Vector2f b) {
+bool Collisions::NearlyEqual(EpsilonVector a, EpsilonVector b) {
     float nearlyEqual = 0.0005f;
     return DistanceSquared(a,b)<nearlyEqual*nearlyEqual;
 }
-bool Collisions::IntersectCircles(float radiusA, float radiusB, Vector2f centerA, Vector2f centerB, Vector2f& normal, float& depth)
+bool Collisions::IntersectCircles(float radiusA, float radiusB, EpsilonVector centerA, EpsilonVector centerB, EpsilonVector& normal, float& depth)
 {
     float dist = Distance(centerA, centerB);
     float radii = radiusA + radiusB;
@@ -29,20 +29,20 @@ bool Collisions::IntersectCircles(float radiusA, float radiusB, Vector2f centerA
         return false;
     }
     normal = centerB - centerA;
-    normal = normal.normalized();
+    normal = normal.Normalized();
     depth = radii - dist;
     return true;
 }
 
-bool Collisions::IntersectPolygons(vector<Vector2f> verticesA, vector<Vector2f> verticesB, Vector2f& normal, float& depth)
+bool Collisions::IntersectPolygons(vector<EpsilonVector> verticesA, vector<EpsilonVector> verticesB, EpsilonVector& normal, float& depth)
 {
     depth = FLT_MAX;
     for (size_t i = 0; i < verticesA.size(); i++) {
-        Vector2f va = verticesA[i];
-        Vector2f vb = verticesA[(i + 1) % verticesA.size()];
-        Vector2f edge = vb - va;
-        Vector2f axis = Vector2f(-edge.y, edge.x);
-        axis = axis.normalized();
+        EpsilonVector va = verticesA[i];
+        EpsilonVector vb = verticesA[(i + 1) % verticesA.size()];
+        EpsilonVector edge = vb - va;
+        EpsilonVector axis = EpsilonVector(-edge.y, edge.x);
+        axis = axis.Normalized();
         float minA = 0;
         float maxA = 0;
         float minB = 0;
@@ -59,11 +59,11 @@ bool Collisions::IntersectPolygons(vector<Vector2f> verticesA, vector<Vector2f> 
         }
     }
     for (size_t i = 0; i < verticesB.size(); i++) {
-        Vector2f va = verticesB[i];
-        Vector2f vb = verticesB[(i + 1) % verticesB.size()];
-        Vector2f edge = vb - va;
-        Vector2f axis = Vector2f(-edge.y, edge.x);
-        axis = axis.normalized();
+        EpsilonVector va = verticesB[i];
+        EpsilonVector vb = verticesB[(i + 1) % verticesB.size()];
+        EpsilonVector edge = vb - va;
+        EpsilonVector axis = EpsilonVector(-edge.y, edge.x);
+        axis = axis.Normalized();
         float minA = 0;
         float maxA = 0;
         float minB = 0;
@@ -80,24 +80,24 @@ bool Collisions::IntersectPolygons(vector<Vector2f> verticesA, vector<Vector2f> 
             normal = axis;
         }
     }
-    Vector2f centerA = FindArithmeticMean(verticesA);
-    Vector2f centerB = FindArithmeticMean(verticesB);
-    Vector2f direction = centerB - centerA;
-    if (direction.dot(normal) < 0.f) {
+    EpsilonVector centerA = FindArithmeticMean(verticesA);
+    EpsilonVector centerB = FindArithmeticMean(verticesB);
+    EpsilonVector direction = centerB - centerA;
+    if (direction.Dot(normal) < 0.f) {
         normal = -normal;
     }
     return true;
 }
 
-bool Collisions::IntersectPolygons(Vector2f centerA, vector<Vector2f> verticesA, Vector2f centerB, vector<Vector2f> verticesB, Vector2f& normal, float& depth)
+bool Collisions::IntersectPolygons(EpsilonVector centerA, vector<EpsilonVector> verticesA, EpsilonVector centerB, vector<EpsilonVector> verticesB, EpsilonVector& normal, float& depth)
 {
     depth = FLT_MAX;
     for (size_t i = 0; i < verticesA.size(); i++) {
-        Vector2f va = verticesA[i];
-        Vector2f vb = verticesA[(i + 1) % verticesA.size()];
-        Vector2f edge = vb - va;
-        Vector2f axis = Vector2f(-edge.y, edge.x);
-        axis = axis.normalized();
+        EpsilonVector va = verticesA[i];
+        EpsilonVector vb = verticesA[(i + 1) % verticesA.size()];
+        EpsilonVector edge = vb - va;
+        EpsilonVector axis = EpsilonVector(-edge.y, edge.x);
+        axis = axis.Normalized();
         float minA = 0;
         float maxA = 0;
         float minB = 0;
@@ -114,11 +114,11 @@ bool Collisions::IntersectPolygons(Vector2f centerA, vector<Vector2f> verticesA,
         }
     }
     for (size_t i = 0; i < verticesB.size(); i++) {
-        Vector2f va = verticesB[i];
-        Vector2f vb = verticesB[(i + 1) % verticesB.size()];
-        Vector2f edge = vb - va;
-        Vector2f axis = Vector2f(-edge.y, edge.x);
-        axis = axis.normalized();
+        EpsilonVector va = verticesB[i];
+        EpsilonVector vb = verticesB[(i + 1) % verticesB.size()];
+        EpsilonVector edge = vb - va;
+        EpsilonVector axis = EpsilonVector(-edge.y, edge.x);
+        axis = axis.Normalized();
         float minA = 0;
         float maxA = 0;
         float minB = 0;
@@ -135,14 +135,14 @@ bool Collisions::IntersectPolygons(Vector2f centerA, vector<Vector2f> verticesA,
             normal = axis;
         }
     }
-    Vector2f direction = centerB - centerA;
-    if (direction.dot(normal) < 0.f) {
+    EpsilonVector direction = centerB - centerA;
+    if (direction.Dot(normal) < 0.f) {
         normal = -normal;
     }
     return true;
 }
 
-bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, float circleRadius, vector<Vector2f> vertices, Vector2f& normal, float& depth)
+bool Collisions::IntersectPolygonAndCircle(EpsilonVector circleCenter, float circleRadius, vector<EpsilonVector> vertices, EpsilonVector& normal, float& depth)
 {
     depth = FLT_MAX;
     float minA = 0;
@@ -150,13 +150,13 @@ bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, float circleRa
     float minB = 0;
     float maxB = 0;
     float axisDepth = 0;
-    Vector2f axis;
+    EpsilonVector axis;
     for (size_t i = 0; i < vertices.size(); i++) {
-        Vector2f va = vertices[i];
-        Vector2f vb = vertices[(i + 1) % vertices.size()];
-        Vector2f edge = vb - va;
-        axis = Vector2f(-edge.y, edge.x);
-        axis = axis.normalized();
+        EpsilonVector va = vertices[i];
+        EpsilonVector vb = vertices[(i + 1) % vertices.size()];
+        EpsilonVector edge = vb - va;
+        axis = EpsilonVector(-edge.y, edge.x);
+        axis = axis.Normalized();
         ProjectVertices(vertices, axis, minA, maxA);
         ProjectCircle(circleCenter,circleRadius, axis, minB, maxB);
         if (minA >= maxB || minB >= maxA) {
@@ -169,9 +169,9 @@ bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, float circleRa
         }
     }
     int cpindex = FindClosestPointOnPolygon(circleCenter, vertices);
-    Vector2f cp = vertices[cpindex];
+    EpsilonVector cp = vertices[cpindex];
     axis = cp - circleCenter;
-    axis = axis.normalized();
+    axis = axis.Normalized();
     ProjectVertices(vertices, axis, minA, maxA);
     ProjectCircle(circleCenter, circleRadius, axis, minB, maxB);
     if (minA >= maxB || minB >= maxA) {
@@ -182,15 +182,15 @@ bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, float circleRa
         depth = axisDepth;
         normal = axis;
     }
-    Vector2f centerPolygon = FindArithmeticMean(vertices);
-    Vector2f direction = centerPolygon - circleCenter;
-    if (direction.dot(normal) < 0.f) {
+    EpsilonVector centerPolygon = FindArithmeticMean(vertices);
+    EpsilonVector direction = centerPolygon - circleCenter;
+    if (direction.Dot(normal) < 0.f) {
         normal = -normal;
     }
     return true;
 }
 
-bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, Vector2f centerPolygon, float circleRadius, vector<Vector2f> vertices, Vector2f& normal, float& depth)
+bool Collisions::IntersectPolygonAndCircle(EpsilonVector circleCenter, EpsilonVector centerPolygon, float circleRadius, vector<EpsilonVector> vertices, EpsilonVector& normal, float& depth)
 {
     depth = FLT_MAX;
     float minA = 0;
@@ -198,13 +198,13 @@ bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, Vector2f cente
     float minB = 0;
     float maxB = 0;
     float axisDepth = 0;
-    Vector2f axis;
+    EpsilonVector axis;
     for (size_t i = 0; i < vertices.size(); i++) {
-        Vector2f va = vertices[i];
-        Vector2f vb = vertices[(i + 1) % vertices.size()];
-        Vector2f edge = vb - va;
-        axis = Vector2f(-edge.y, edge.x);
-        axis = axis.normalized();
+        EpsilonVector va = vertices[i];
+        EpsilonVector vb = vertices[(i + 1) % vertices.size()];
+        EpsilonVector edge = vb - va;
+        axis = EpsilonVector(-edge.y, edge.x);
+        axis = axis.Normalized();
         ProjectVertices(vertices, axis, minA, maxA);
         ProjectCircle(circleCenter, circleRadius, axis, minB, maxB);
         if (minA >= maxB || minB >= maxA) {
@@ -217,9 +217,9 @@ bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, Vector2f cente
         }
     }
     int cpindex = FindClosestPointOnPolygon(circleCenter, vertices);
-    Vector2f cp = vertices[cpindex];
+    EpsilonVector cp = vertices[cpindex];
     axis = cp - circleCenter;
-    axis = axis.normalized();
+    axis = axis.Normalized();
     ProjectVertices(vertices, axis, minA, maxA);
     ProjectCircle(circleCenter, circleRadius, axis, minB, maxB);
     if (minA >= maxB || minB >= maxA) {
@@ -230,21 +230,21 @@ bool Collisions::IntersectPolygonAndCircle(Vector2f circleCenter, Vector2f cente
         depth = axisDepth;
         normal = axis;
     }
-    Vector2f direction = centerPolygon - circleCenter;
-    if (direction.dot(normal) < 0.f) {
+    EpsilonVector direction = centerPolygon - circleCenter;
+    if (direction.Dot(normal) < 0.f) {
         normal = -normal;
     }
     return true;
 }
 
-void Collisions::ProjectCircle(Vector2f center, float radius, Vector2f axis, float& min, float& max)
+void Collisions::ProjectCircle(EpsilonVector center, float radius, EpsilonVector axis, float& min, float& max)
 {
-    Vector2f dir = axis.normalized();
-    Vector2f dirAndRad = dir * radius;
-    Vector2f p1 = center + dirAndRad;
-    Vector2f p2 = center - dirAndRad;
-    min = axis.dot(p1);
-    max = axis.dot(p2);
+    EpsilonVector dir = axis.Normalized();
+    EpsilonVector dirAndRad = dir * radius;
+    EpsilonVector p1 = center + dirAndRad;
+    EpsilonVector p2 = center - dirAndRad;
+    min = axis.Dot(p1);
+    max = axis.Dot(p2);
     if (min >= max) {
         float t = min;
         min = max;
@@ -252,13 +252,13 @@ void Collisions::ProjectCircle(Vector2f center, float radius, Vector2f axis, flo
     }
 }
 
-void Collisions::ProjectVertices(vector<Vector2f> vertices, Vector2f axis, float& min, float& max)
+void Collisions::ProjectVertices(vector<EpsilonVector> vertices, EpsilonVector axis, float& min, float& max)
 {
     min = FLT_MAX;
     max = -FLT_MAX;
     for (size_t i = 0; i < vertices.size(); i++) {
-        Vector2f v = vertices[i];
-        float proj = axis.dot(v);
+        EpsilonVector v = vertices[i];
+        float proj = axis.Dot(v);
         if (proj < min) {
             min = proj;
         }
@@ -268,12 +268,12 @@ void Collisions::ProjectVertices(vector<Vector2f> vertices, Vector2f axis, float
     }
 }
 
-int Collisions::FindClosestPointOnPolygon(Vector2f Center, vector<Vector2f> vertices)
+int Collisions::FindClosestPointOnPolygon(EpsilonVector Center, vector<EpsilonVector> vertices)
 {
     int result = -1;
     float minDistance = FLT_MAX;
     for (size_t i = 0; i < vertices.size(); i++) {
-        Vector2f v = vertices[i];
+        EpsilonVector v = vertices[i];
         float distance = Distance(v, Center);   
         if (distance < minDistance) {
             minDistance = distance;
@@ -282,10 +282,10 @@ int Collisions::FindClosestPointOnPolygon(Vector2f Center, vector<Vector2f> vert
     }
     return result;
 }
-bool Collisions::Collide(EpsilonBody bodyA, EpsilonBody bodyB, Vector2f& normal, float& depth)
+bool Collisions::Collide(EpsilonBody bodyA, EpsilonBody bodyB, EpsilonVector& normal, float& depth)
 {
-    if (bodyA.shapetype == box) {
-        if (bodyB.shapetype == box) {
+    if (bodyA.shapetype == box || bodyA.shapetype == triangle) {
+        if (bodyB.shapetype == box || bodyB.shapetype == triangle) {
             if (Collisions::IntersectPolygons(bodyA.position, bodyA.GetTransformedVertices(), bodyB.position, bodyB.GetTransformedVertices(), normal, depth)) {
                 return true;
             }
@@ -298,7 +298,7 @@ bool Collisions::Collide(EpsilonBody bodyA, EpsilonBody bodyB, Vector2f& normal,
         }
     }
     else {
-        if (bodyB.shapetype == box) {
+        if (bodyB.shapetype == box || bodyB.shapetype == triangle) {
             if (Collisions::IntersectPolygonAndCircle(bodyA.position, bodyA.radius, bodyB.GetTransformedVertices(), normal, depth)) {
                 return true;
             }
@@ -318,12 +318,12 @@ bool Collisions::IntersectAABB(AABB a, AABB b)
     }
     return true;
 }
-void Collisions::PointSegmentDistance(Vector2f p, Vector2f a, Vector2f b, float& distanceSquared, Vector2f& cp)
+void Collisions::PointSegmentDistance(EpsilonVector p, EpsilonVector a, EpsilonVector b, float& distanceSquared, EpsilonVector& cp)
 {
-    Vector2f ab = b - a;
-    Vector2f ap = p - a;
-    float proj = ap.dot(ab);
-    float ablensq = ab.lengthSquared();
+    EpsilonVector ab = b - a;
+    EpsilonVector ap = p - a;
+    float proj = ap.Dot(ab);
+    float ablensq = ab.LengthSquared();
     float d = proj / ablensq;
     if (d <= 0) {
         cp = a;
@@ -336,13 +336,13 @@ void Collisions::PointSegmentDistance(Vector2f p, Vector2f a, Vector2f b, float&
     }
     distanceSquared = DistanceSquared(p, cp);
 }
-void Collisions::FindContactPoints(EpsilonBody bodyA, EpsilonBody bodyB, Vector2f& contact1, Vector2f& contact2, int& contactCount)
+void Collisions::FindContactPoints(EpsilonBody bodyA, EpsilonBody bodyB, EpsilonVector& contact1, EpsilonVector& contact2, int& contactCount)
 {
-    contact1 = Vector2f(0, 0);
-    contact2 = Vector2f(0, 0);
+    contact1 = EpsilonVector(0, 0);
+    contact2 = EpsilonVector(0, 0);
     contactCount = 0;
-    if (bodyA.shapetype == box) {
-        if (bodyB.shapetype == box) {
+    if (bodyA.shapetype == box||bodyA.shapetype == triangle) {
+        if (bodyB.shapetype == box||bodyB.shapetype == triangle) {
             FindPolygonsContactPoints(bodyA.GetTransformedVertices(), bodyB.GetTransformedVertices(), contact1, contact2, contactCount);
         }
         else {
@@ -351,7 +351,7 @@ void Collisions::FindContactPoints(EpsilonBody bodyA, EpsilonBody bodyB, Vector2
         }
     }
     else {
-        if (bodyB.shapetype == box) {
+        if (bodyB.shapetype == box || bodyB.shapetype == triangle) {
             FindCirclePolygonContactPoint(bodyA.position, bodyA.radius, bodyB.position, bodyB.GetTransformedVertices(), contact1);
             contactCount = 1;
         }
@@ -361,15 +361,15 @@ void Collisions::FindContactPoints(EpsilonBody bodyA, EpsilonBody bodyB, Vector2
         }
     }
 }
-void Collisions::FindPolygonsContactPoints(vector<Vector2f> verticesA, vector<Vector2f> verticesB, Vector2f& contact1, Vector2f& contact2, int& contactCount) {
+void Collisions::FindPolygonsContactPoints(vector<EpsilonVector> verticesA, vector<EpsilonVector> verticesB, EpsilonVector& contact1, EpsilonVector& contact2, int& contactCount) {
     float mindistsq = FLT_MAX;
     float distsq = 0;
-    Vector2f cp;
+    EpsilonVector cp;
     for (size_t i = 0; i < verticesA.size(); i++) {
-        Vector2f p = verticesA[i];
+        EpsilonVector p = verticesA[i];
         for (size_t j = 0; j < verticesB.size(); j++) {
-            Vector2f a = verticesB[j];
-            Vector2f b = verticesB[(j + 1) % verticesB.size()];
+            EpsilonVector a = verticesB[j];
+            EpsilonVector b = verticesB[(j + 1) % verticesB.size()];
             PointSegmentDistance(p, a, b, distsq, cp);
             if (NearlyEqual(distsq, mindistsq)) {
                 if (!NearlyEqual(cp, contact1)&& !NearlyEqual(cp, contact2)) {
@@ -385,10 +385,10 @@ void Collisions::FindPolygonsContactPoints(vector<Vector2f> verticesA, vector<Ve
         }
     }
     for (size_t i = 0; i < verticesB.size(); i++) {
-        Vector2f p = verticesB[i];
+        EpsilonVector p = verticesB[i];
         for (size_t j = 0; j < verticesA.size(); j++) {
-            Vector2f a = verticesA[j];
-            Vector2f b = verticesA[(j + 1) % verticesA.size()];
+            EpsilonVector a = verticesA[j];
+            EpsilonVector b = verticesA[(j + 1) % verticesA.size()];
             PointSegmentDistance(p, a, b, distsq, cp);
             if (NearlyEqual(distsq, mindistsq)) {
                 if (!NearlyEqual(cp, contact1)&& !NearlyEqual(cp, contact2)) {
@@ -404,14 +404,14 @@ void Collisions::FindPolygonsContactPoints(vector<Vector2f> verticesA, vector<Ve
         }
     }
 }
-void Collisions::FindCirclePolygonContactPoint(Vector2f circleCenter, float circleRadius, Vector2f polygonCenter, vector<Vector2f> polygonVertices, Vector2f& cp)
+void Collisions::FindCirclePolygonContactPoint(EpsilonVector circleCenter, float circleRadius, EpsilonVector polygonCenter, vector<EpsilonVector> polygonVertices, EpsilonVector& cp)
 {
     float mindistsq = FLT_MAX;
     float distsq = 0;
-    Vector2f contact;
+    EpsilonVector contact;
     for (size_t i = 0; i < polygonVertices.size(); i++) {
-        Vector2f a = polygonVertices[i];
-        Vector2f b = polygonVertices[(i+1)%polygonVertices.size()];
+        EpsilonVector a = polygonVertices[i];
+        EpsilonVector b = polygonVertices[(i+1)%polygonVertices.size()];
         PointSegmentDistance(circleCenter, a, b, distsq, contact);
         if (distsq < mindistsq) {
             mindistsq = distsq;
@@ -419,22 +419,22 @@ void Collisions::FindCirclePolygonContactPoint(Vector2f circleCenter, float circ
         }
     }
 }
-void Collisions::FindCirclesContactPoint(Vector2f centerA, Vector2f centerB, float radiusA, Vector2f& cp)
+void Collisions::FindCirclesContactPoint(EpsilonVector centerA, EpsilonVector centerB, float radiusA, EpsilonVector& cp)
 {
-    Vector2f dir = centerB - centerA;
-    dir = dir.normalized();
+    EpsilonVector dir = centerB - centerA;
+    dir = dir.Normalized();
     cp = centerA + dir * radiusA;
 }
 
-Vector2f Collisions::FindArithmeticMean(vector<Vector2f> vertices)
+EpsilonVector Collisions::FindArithmeticMean(vector<EpsilonVector> vertices)
 {
     float sumX = 0.f;
     float sumY = 0.f;
     for (size_t i = 0; i < vertices.size(); i++) {
-       Vector2f v = vertices[i];
+        EpsilonVector v = vertices[i];
        sumX += v.x;
        sumY += v.y;
     }
-    return Vector2f(sumX / (float)vertices.size(), sumY / (float)vertices.size());
+    return EpsilonVector(sumX / (float)vertices.size(), sumY / (float)vertices.size());
 }
 

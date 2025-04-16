@@ -1,6 +1,6 @@
 #include "AABB.h"
 
-AABB::AABB(Vector2f Min, Vector2f Max)
+AABB::AABB(EpsilonVector Min, EpsilonVector Max)
 {
 	min = Min;
 	max = Max;
@@ -8,6 +8,6 @@ AABB::AABB(Vector2f Min, Vector2f Max)
 
 AABB::AABB(float MinX, float MaxX, float MinY, float MaxY)
 {
-	min = Vector2f(MinX, MinY);
-	max = Vector2f(MaxX, MaxY);
+	min = EpsilonVector(MinX, MinY);
+	max = EpsilonVector(MaxX, MaxY);
 }

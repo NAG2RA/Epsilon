@@ -23,6 +23,7 @@
     <ClCompile Include="CollisionManifold.cpp" />
     <ClCompile Include="Collisions.cpp" />
     <ClCompile Include="EpsilonBody.cpp" />
+    <ClCompile Include="EpsilonVector.cpp" />
     <ClCompile Include="EpsilonWorld.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -31,6 +32,7 @@
     <ClInclude Include="CollisionManifold.h" />
     <ClInclude Include="Collisions.h" />
     <ClInclude Include="EpsilonBody.h" />
+    <ClInclude Include="EpsilonVector.h" />
     <ClInclude Include="EpsilonWorld.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

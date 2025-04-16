@@ -9,11 +9,12 @@
 #include"EpsilonBody.h"
 #include"Collisions.h"
 #include"CollisionManifold.h"
+#include"EpsilonVector.h"
 class EpsilonWorld
 {
 public:
-	Vector2f gravity;
-	Vector2f normal;
+	EpsilonVector gravity;
+	EpsilonVector normal;
 	float depth;
 	EpsilonWorld();
 	vector<EpsilonBody> bodyList;
@@ -22,7 +23,7 @@ public:
 	void RemoveBody(int index);
 	bool GetBody(float index, EpsilonBody& body);
 	void Update(float dt, int iterations);
-	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, Vector2f mtv);
+	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv);
 	void BroadPhase();
 	void NarrowPhase();
 	void UpdateMovement(float dt, int iterations);

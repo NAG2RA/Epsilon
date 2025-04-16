@@ -5,13 +5,14 @@
 #include<iostream>
 #include<vector>
 #include<cmath>
+#include"EpsilonVector.h"
 using namespace sf;
 using namespace std;
 class AABB 
 {
 public:
-	Vector2f min, max;
-	AABB(Vector2f Min, Vector2f Max);
+	EpsilonVector min, max;
+	AABB(EpsilonVector Min, EpsilonVector Max);
 	AABB(float MinX, float MaxX, float MinY, float MaxY);
 };
 
