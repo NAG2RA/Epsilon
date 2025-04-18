@@ -30,5 +30,6 @@ public:
 	void ResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveCollisonWithRotation(CollisionManifold& manifold);
 	void ResolveCollisonWithRotationAndFriction(CollisionManifold& manifold);
+	void Explosion(EpsilonVector position, float radius, float magnitude);
 };
 

@@ -34,6 +34,8 @@ int main() {
     View v = window.getDefaultView();
     v.zoom(.05f);
     window.setView(v);
+    ContextSettings settings;
+    settings.antiAliasingLevel = 8;
     window.setFramerateLimit(320);   
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 0.5f, 0.5f, 30, 3, true));
     RectangleShape r({ 30,3 });
@@ -75,9 +77,19 @@ int main() {
             }
             ispressed = true;
         }
+        else if (Keyboard::isKeyPressed(Keyboard::Key::A)) {
+            if (!ispressed) {
+                Vector2i postemp = Mouse::getPosition(window);
+                Vector2f pos = window.mapPixelToCoords(postemp);
+                world.Explosion(Vec2ToEp(pos), 10, 100);
+            }
+            ispressed = true;
+          
+        }
         else {
             ispressed = false;
         }
+        
         r.setPosition(EpToVec2(world.bodyList[0].position));
         world.Update(deltatime, 20);
         window.clear(Color::Black);
@@ -97,22 +109,7 @@ int main() {
                 c.setPosition(EpToVec2(world.bodyList[i].position));
                 Angle angle = radians(world.bodyList[i].angle);
                 c.setRotation(angle);
-                RectangleShape rc({ 0.1,0.1 });
-                rc.setPosition(EpToVec2(world.bodyList[i].GetTransformedVertices()[0]));
-                rc.setRotation(angle);
-                rc.setFillColor(Color::Red);
-                RectangleShape rc2({ 0.1,0.1 });
-                rc2.setPosition(EpToVec2(world.bodyList[i].GetTransformedVertices()[1]));
-                rc2.setRotation(angle);
-                rc2.setFillColor(Color::Red);
-                RectangleShape rc3({ 0.1,0.1 });
-                rc3.setPosition(EpToVec2(world.bodyList[i].GetTransformedVertices()[2]));
-                rc3.setRotation(angle);
-                rc3.setFillColor(Color::Red);
                 window.draw(c);
-                window.draw(rc);
-                window.draw(rc2);
-                window.draw(rc3);
             }
             else {
                 CircleShape c(1);

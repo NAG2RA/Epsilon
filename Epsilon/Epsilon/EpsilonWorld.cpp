@@ -268,3 +268,19 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyB.angularVelocity += rb.Cross(frictionImpulse) * bodyB.inverseInertia;
 	}
 }
+
+void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitude)
+{
+	for (size_t i = 0; i < bodyList.size(); i++) {
+		if (Collisions::Distance(bodyList[i].position, position) > radius) {
+			continue;
+		}
+		EpsilonVector dir = bodyList[i].position - position;
+		float dist = Collisions::Distance(bodyList[i].position, position);
+		EpsilonVector impulse = (dir * magnitude) / (dist*dist);
+		EpsilonVector horizontal(bodyList[i].position.x, 0.f);
+		horizontal = horizontal.Normalized();
+		bodyList[i].linearVelocity += impulse * bodyList[i].inverseMass;
+		bodyList[i].angularVelocity += horizontal.Dot(impulse) * bodyList[i].inverseInertia;
+	}
+}
