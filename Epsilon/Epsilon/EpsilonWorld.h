@@ -14,6 +14,8 @@ class EpsilonWorld
 {
 public:
 	EpsilonVector gravity;
+	float airResistance;
+	float springConstant;
 	EpsilonVector normal;
 	float depth;
 	EpsilonWorld();
@@ -30,6 +32,8 @@ public:
 	void ResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveCollisonWithRotation(CollisionManifold& manifold);
 	void ResolveCollisonWithRotationAndFriction(CollisionManifold& manifold);
+	void ResolveThreadConnection();
+	void ResolveSpringConnection();
 	void Explosion(EpsilonVector position, float radius, float magnitude);
 };
 

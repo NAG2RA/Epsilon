@@ -28,6 +28,7 @@ int main() {
     a +=c*b;
     Vector2f acceleration(0, 0);
     Vector2f velocity(0, 0);
+    EpsilonVector origin;
     Clock dt;
     float drag = 0.99f;
     RenderWindow window(VideoMode({ 1280, 720 }), "mywindow");
@@ -37,11 +38,12 @@ int main() {
     ContextSettings settings;
     settings.antiAliasingLevel = 8;
     window.setFramerateLimit(320);   
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 0.5f, 0.5f, 30, 3, true));
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 0.5f, 0.5f, 30, 3, true, none));
     RectangleShape r({ 30,3 });
     r.setPosition(EpToVec2(world.bodyList[0].position));
     r.setOrigin({ 15,1.5 });
     bool ispressed = false;
+    int contype = 0;
     while (window.isOpen()) {   
         Time d = dt.restart();
         float deltatime = d.asSeconds();
@@ -52,9 +54,27 @@ int main() {
         } 
         if (Mouse::isButtonPressed(Mouse::Button::Left)) {
             if (!ispressed) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false));
+                if (contype == 0) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    world.AddBody(EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false, none));
+                }
+                else if (contype == 1) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false, spring);
+                    body.CreateConnection(origin);
+                    world.AddBody(body);
+                    contype = 0;
+                }
+                else if (contype == 2) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false, thread);
+                    body.CreateConnection(origin);
+                    world.AddBody(body);
+                    contype = 0;
+                }
             }
             
             ispressed = true;
@@ -62,18 +82,54 @@ int main() {
         else if (Mouse::isButtonPressed(Mouse::Button::Right)) {
 
             if (!ispressed) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false));
+                if (contype == 0) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false, none));
+                }
+                else if (contype == 1) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false, spring);
+                    body.CreateConnection(origin);
+                    world.AddBody(body);
+                    contype = 0;
+                }
+                else if (contype == 2) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false, thread);
+                    body.CreateConnection(origin);
+                    world.AddBody(body);
+                    contype = 0;
+                }
             }
             ispressed = true;
         }
         else if (Mouse::isButtonPressed(Mouse::Button::Middle)) {
 
             if (!ispressed) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false));
+                if (contype == 0) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    world.AddBody(EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, none));
+                }
+                else if (contype == 1) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    EpsilonBody body = EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, spring);
+                    body.CreateConnection(origin);
+                    world.AddBody(body);
+                    contype = 0;
+                }
+                else if (contype == 2) {
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    EpsilonBody body = EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, thread);
+                    body.CreateConnection(origin);
+                    world.AddBody(body);
+                    contype = 0;
+                }
             }
             ispressed = true;
         }
@@ -86,6 +142,18 @@ int main() {
             ispressed = true;
           
         }
+        else if (Keyboard::isKeyPressed(Keyboard::Key::C) && Keyboard::isKeyPressed(Keyboard::Key::S)) {
+            contype = 1;
+            Vector2i postemp = Mouse::getPosition(window);
+            Vector2f pos = window.mapPixelToCoords(postemp);
+            origin = Vec2ToEp(pos);
+        }
+        else if (Keyboard::isKeyPressed(Keyboard::Key::C) && Keyboard::isKeyPressed(Keyboard::Key::T)) {
+            contype = 2;
+            Vector2i postemp = Mouse::getPosition(window);
+            Vector2f pos = window.mapPixelToCoords(postemp);
+            origin = Vec2ToEp(pos);
+        }
         else {
             ispressed = false;
         }
@@ -94,6 +162,26 @@ int main() {
         world.Update(deltatime, 20);
         window.clear(Color::Black);
         for (size_t i = 1; i < world.bodyList.size(); i++) {
+            if (world.bodyList[i].connectiontype == thread) {
+                VertexArray line(PrimitiveType::Lines, 2);
+                line[0].position = EpToVec2(world.bodyList[i].originPosition);
+                line[0].color = Color::Blue;
+                Vector2i postemp = Mouse::getPosition(window);
+                Vector2f pos = window.mapPixelToCoords(postemp);
+                line[1].position = EpToVec2(world.bodyList[i].position);
+                line[1].color = Color::Blue;
+                window.draw(line);
+            }
+            else if (world.bodyList[i].connectiontype == spring) {
+                VertexArray line(PrimitiveType::Lines, 2);
+                line[0].position = EpToVec2(world.bodyList[i].originPosition);
+                line[0].color = Color::Green;
+                Vector2i postemp = Mouse::getPosition(window);
+                Vector2f pos = window.mapPixelToCoords(postemp);
+                line[1].position = EpToVec2(world.bodyList[i].position);
+                line[1].color = Color::Green;
+                window.draw(line);
+            }
             if (world.bodyList[i].shapetype == box) {
                 RectangleShape rc({ 2,2 });
                 rc.setOrigin({ 1,1 });
@@ -105,7 +193,7 @@ int main() {
             else if (world.bodyList[i].shapetype == triangle) {
                 float rad = world.bodyList[i].width / sqrt(3);
                 CircleShape c(rad,3);
-                c.setOrigin({rad, world.bodyList[i].height/2.f });
+                c.setOrigin({rad, world.bodyList[i].height*2.f/3.f });
                 c.setPosition(EpToVec2(world.bodyList[i].position));
                 Angle angle = radians(world.bodyList[i].angle);
                 c.setRotation(angle);

@@ -4,7 +4,7 @@ float maxArea = 64 * 64;
 float minDensity = 0.5f;
 float maxDensity = 21.4f;
 EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, float inertia, float restitution, float area, float radius, float width,
-	float height, vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype)
+	float height, vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype, Connectiontype connectiontype)
 	:position(position),
 	density(density),
 	mass(mass),
@@ -15,6 +15,7 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	height(height),
 	isStatic(isStatic),
 	shapetype(shapetype),
+	connectiontype(connectiontype),
 	angle(0.f),
 	angularVelocity(0.f),
 	linearVelocity(0, 0),
@@ -47,10 +48,10 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody body)
 {
-	return EpsilonBody(body.position,body.density,body.mass, body.inertia, body.restitution,body.area,body.radius,body.width,body.height, body.vertices, body.isStatic,body.shapetype);
+	return EpsilonBody(body.position,body.density,body.mass, body.inertia, body.restitution,body.area,body.radius,body.width,body.height, body.vertices, body.isStatic,body.shapetype, body.connectiontype);
 }
 
-EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic)
+EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic,Connectiontype connectiontype)
 {
 	float area = radius * radius * 3.14f;
 	if (area < minArea) 
@@ -91,11 +92,11 @@ EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density,
 		mass = area * (float)density;
 		inertia = (1.f / 2.f) * mass * radius * radius;
 	}
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic, Shapetype::circle);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic, Shapetype::circle, connectiontype);
 	return bd;
 }
 
-EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic)
+EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, Connectiontype connectiontype)
 {
 	float area = width * height;
 	if (area < minArea)
@@ -137,10 +138,10 @@ EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, fl
 		inertia = (1.f / 12.f) * mass * (width * width + height * height);
 	}
 	vector<EpsilonVector> vertices = GetBoxVertices(width,height);
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, width, height, vertices, isStatic, Shapetype::box);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, width, height, vertices, isStatic, Shapetype::box, connectiontype);
 	return bd;
 }
-EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic)
+EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, Connectiontype connectiontype)
 {
 	float area = (side*side*sqrt(3))/4;
 	if (area < minArea)
@@ -183,8 +184,21 @@ EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float densit
 		inertia = (1.f / 36.f)*side*height*height*height;
 	}
 	vector<EpsilonVector> vertices = GetTriangleVertices(side);
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, side, height, vertices, isStatic, Shapetype::triangle);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, side, height, vertices, isStatic, Shapetype::triangle, connectiontype);
 	return bd;
+}
+void EpsilonBody::CreateConnection(EpsilonVector origin) {
+	if (connectiontype == none) {
+		return;
+	}
+	originPosition = origin;
+	connectionDistance = Distance(position, origin);
+}
+float EpsilonBody::Distance(EpsilonVector a, EpsilonVector b)
+{
+	float dx = a.x - b.x;
+	float dy = a.y - b.y;
+	return sqrt(dx * dx + dy * dy);
 }
 void EpsilonBody::updateMovement(float dt, EpsilonVector gravity,int iterations)
 {
@@ -198,6 +212,7 @@ void EpsilonBody::updateMovement(float dt, EpsilonVector gravity,int iterations)
 	linearVelocity += gravity * dt;
 	linearVelocity += acceleration*dt;
 	angle += angularVelocity * dt;
+	angularVelocity *= .99999f;
 	position += linearVelocity * dt;
 	force = EpsilonVector({ 0,0 });
 }
@@ -228,7 +243,7 @@ vector<EpsilonVector> EpsilonBody::GetTriangleVertices(float side)
 	vector<EpsilonVector> vertices(3);
 	float left = -side / 2.f;
 	float right = left + side;
-	float bottom = height/2.f;
+	float bottom = height/3.f;
 	float top = bottom - height;
 	vertices[0] = EpsilonVector(0.f, top);
 	vertices[1] = EpsilonVector(left, bottom);

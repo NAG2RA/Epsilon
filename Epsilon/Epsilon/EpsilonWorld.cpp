@@ -3,7 +3,9 @@
 EpsilonWorld::EpsilonWorld()
 	:depth(0),
 	normal(0,0),
-	gravity(0,9.81f)
+	gravity(0,9.81f),
+	springConstant(100),
+	airResistance(2)
 {
 }
 
@@ -42,7 +44,8 @@ void EpsilonWorld::Update(float dt, int iterations)
 		BroadPhase();
 		NarrowPhase();
 		UpdateMovement(dt,iterations);
-		
+		ResolveThreadConnection();
+		ResolveSpringConnection();
 	}
 }
 
@@ -268,7 +271,37 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyB.angularVelocity += rb.Cross(frictionImpulse) * bodyB.inverseInertia;
 	}
 }
-
+void EpsilonWorld::ResolveThreadConnection() {
+	for (size_t i = 0; i < bodyList.size(); i++) {
+		if (bodyList[i].connectiontype == none|| bodyList[i].connectiontype == spring) {
+			continue;
+		}
+		else if (Collisions::Distance(bodyList[i].originPosition, bodyList[i].position) > bodyList[i].connectionDistance) {
+			float depth = Collisions::Distance(bodyList[i].originPosition, bodyList[i].position) - bodyList[i].connectionDistance;
+			EpsilonVector dir = bodyList[i].position - bodyList[i].originPosition;
+			dir = dir.Normalized();
+			bodyList[i].linearVelocity += -dir * depth * bodyList[i].inverseMass;
+			EpsilonVector resistance = bodyList[i].linearVelocity;
+			resistance = -resistance * airResistance;
+			bodyList[i].AddForce(resistance);
+		}
+	}
+}
+void EpsilonWorld::ResolveSpringConnection() {
+	for (size_t i = 0; i < bodyList.size(); i++) {
+		if (bodyList[i].connectiontype == none || bodyList[i].connectiontype == thread) {
+			continue;
+		}
+		float depth = Collisions::Distance(bodyList[i].originPosition, bodyList[i].position) - bodyList[i].connectionDistance;
+		EpsilonVector dir = bodyList[i].position - bodyList[i].originPosition;
+		dir = dir.Normalized();
+		EpsilonVector force = -depth * dir * springConstant;
+		EpsilonVector resistance = bodyList[i].linearVelocity;
+		resistance = -resistance*airResistance;
+		bodyList[i].AddForce(force);
+		bodyList[i].AddForce(resistance);
+	}
+}
 void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitude)
 {
 	for (size_t i = 0; i < bodyList.size(); i++) {

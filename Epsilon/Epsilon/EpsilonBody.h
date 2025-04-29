@@ -16,25 +16,33 @@ enum Shapetype {
 	box = 1,
 	triangle = 2
 };
+enum Connectiontype {
+	none = 0,
+	thread = 1,
+	spring = 2
+};
 class EpsilonBody
 {
 public:
-	float angle, angularVelocity, inverseMass;
+	float angle, angularVelocity, inverseMass, connectionDistance;
 	float density, mass, restitution, area, radius, width, height, inertia, inverseInertia, dynamicFriction, staticFriction;
-	EpsilonVector position, linearVelocity, force;
+	EpsilonVector position, linearVelocity, force, originPosition;
 	AABB aabb;
 	bool isStatic;
 	Shapetype shapetype;
+	Connectiontype connectiontype;
 	vector<EpsilonVector> vertices;
 	vector<EpsilonVector> transformedVertices;
 	bool isTransformUpdated;
 	bool isAABBUpdated;
 	EpsilonBody(EpsilonVector position, float density, float mass, float inertia, float restitution, float area, float radius, float width,
-		float height,vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype);
+		float height,vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype, Connectiontype connectiontype);
 	static EpsilonBody CreateNewBody(EpsilonBody body);
-	static EpsilonBody CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic);
-	static EpsilonBody CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic);
-	static EpsilonBody CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic);
+	static EpsilonBody CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic, Connectiontype connectiontype);
+	static EpsilonBody CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, Connectiontype connectiontype);
+	static EpsilonBody CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, Connectiontype connectiontype);
+	void CreateConnection(EpsilonVector origin);
+	static float Distance(EpsilonVector a, EpsilonVector b);
 	void updateMovement(float dt, EpsilonVector gravity, int iterations);
 	void Move(EpsilonVector amount);
 	static vector<EpsilonVector> GetBoxVertices(float width, float height);
