@@ -15,7 +15,7 @@ class EpsilonWorld
 public:
 	EpsilonVector gravity;
 	float airResistance;
-	float springConstant;
+	float springConstant, damperConstant, damperThreadConstant;
 	EpsilonVector normal;
 	float depth;
 	EpsilonWorld();
