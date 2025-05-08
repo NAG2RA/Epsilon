@@ -4,10 +4,10 @@ EpsilonWorld::EpsilonWorld()
 	:depth(0),
 	normal(0,0),
 	gravity(0,9.81f),
-	springConstant(100),
+	springConstant(50),
 	damperConstant(5),
 	damperThreadConstant(25),
-	airResistance(0.2f)
+	forceConstant(0.05f)
 {
 }
 
@@ -48,6 +48,8 @@ void EpsilonWorld::Update(float dt, int iterations)
 		UpdateMovement(dt,iterations);
 		ResolveThreadConnection();
 		ResolveSpringConnection();
+		AirResistance();
+		
 	}
 }
 
@@ -286,10 +288,6 @@ void EpsilonWorld::ResolveThreadConnection() {
 			bodyList[i].linearVelocity += -dir * (bodyList[i].inverseMass*restDist);
 			bodyList[i].AddForce(damperForce * dir);
 		}
-		
-		EpsilonVector resistance = bodyList[i].linearVelocity;
-		resistance = -resistance * airResistance;
-		bodyList[i].AddForce(resistance);
 	}
 }
 void EpsilonWorld::ResolveSpringConnection() {
@@ -304,9 +302,6 @@ void EpsilonWorld::ResolveSpringConnection() {
 		float springForce = -restDist * springConstant;
 		float damperForce = -(damperConstant * bodyList[i].linearVelocity.Dot(dir))/dist;
 		EpsilonVector force = (springForce+damperForce)*dir/dist;
-		EpsilonVector resistance = bodyList[i].linearVelocity;
-		resistance = -resistance*airResistance;
-		bodyList[i].AddForce(resistance);
 		bodyList[i].AddForce(force);
 	}
 }
@@ -324,5 +319,66 @@ void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitu
 		float mag = min(abs(horizontal.Dot(impulse)), abs(vertical.Dot(impulse))) == abs(horizontal.Dot(impulse)) ? horizontal.Dot(impulse) : vertical.Dot(impulse);
 		bodyList[i].linearVelocity += impulse * bodyList[i].inverseMass;
 		bodyList[i].angularVelocity += mag * bodyList[i].inverseInertia;
+	}
+}
+void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
+	for (size_t i = 0; i < bodyList.size(); i++) {
+		if (bodyList[i].isStatic == true) {
+			continue;
+		}
+		if (bodyList[i].shapetype == box) {
+			if (bodyList[i].position.y + bodyList[i].height / 2.f > surfacePosition.y) {
+				EpsilonVector dir(0, 1.f);
+				float h = bodyList[i].position.y + bodyList[i].height / 2.f - surfacePosition.y;
+				if (h > bodyList[i].height) {
+					h = bodyList[i].height;
+				}
+				EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
+				resistance = -resistance * forceConstant*density * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
+				bodyList[i].AddForce(resistance);
+				EpsilonVector force = -dir * bodyList[i].width * h * 9.81f * density;
+				bodyList[i].AddForce(force);
+			}
+		}
+		else if(bodyList[i].shapetype == circle){
+			if (bodyList[i].position.y + bodyList[i].radius > surfacePosition.y) {
+				EpsilonVector dir(0, 1.f);
+				float h = bodyList[i].position.y + bodyList[i].radius - surfacePosition.y;
+				if (h > bodyList[i].radius*2.f) {
+					h = bodyList[i].radius*2.f;
+				}
+				EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
+				resistance = -resistance * forceConstant * density * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
+				bodyList[i].AddForce(resistance);
+				EpsilonVector force = -dir * bodyList[i].radius * 2.f * h * 9.81f * density;
+				bodyList[i].AddForce(force);
+			}
+		}
+		else if (bodyList[i].shapetype == triangle) {
+			if (bodyList[i].position.y + bodyList[i].height / 3.f > surfacePosition.y) {
+				EpsilonVector dir(0, 1.f);
+				float h = bodyList[i].position.y + bodyList[i].height / 3.f - surfacePosition.y;
+				if (h > bodyList[i].height) {
+					h = bodyList[i].height;
+				}
+				EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
+				resistance = -resistance * forceConstant * density * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
+				bodyList[i].AddForce(resistance);
+				EpsilonVector force = -dir * bodyList[i].width * h * 9.81f * density;
+				bodyList[i].AddForce(force);
+			}
+		}
+	}
+}
+
+void EpsilonWorld::AirResistance()
+{
+	for (size_t i = 0; i < bodyList.size(); i++) {
+		if (bodyList[i].isStatic == true) {
+			continue;
+		}
+		EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
+		resistance = -resistance * forceConstant * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
+		bodyList[i].AddForce(resistance);
 	}
 }

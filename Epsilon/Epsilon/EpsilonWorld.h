@@ -14,7 +14,7 @@ class EpsilonWorld
 {
 public:
 	EpsilonVector gravity;
-	float airResistance;
+	float forceConstant;
 	float springConstant, damperConstant, damperThreadConstant;
 	EpsilonVector normal;
 	float depth;
@@ -35,5 +35,7 @@ public:
 	void ResolveThreadConnection();
 	void ResolveSpringConnection();
 	void Explosion(EpsilonVector position, float radius, float magnitude);
+	void Buoyancy(EpsilonVector surfacePosition, float density);
+	void AirResistance();
 };
 

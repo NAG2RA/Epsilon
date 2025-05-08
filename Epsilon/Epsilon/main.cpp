@@ -22,10 +22,6 @@ EpsilonVector Vec2ToEp(Vector2f c) {
 int main() {  
     srand(time(0));
     EpsilonWorld world;
-    EpsilonVector a(1, 0);
-    EpsilonVector b(2, 3);
-    float c =2;
-    a +=c*b;
     Vector2f acceleration(0, 0);
     Vector2f velocity(0, 0);
     EpsilonVector origin;
@@ -44,6 +40,10 @@ int main() {
     r.setOrigin({ 15,1.5 });
     bool ispressed = false;
     int contype = 0;
+    RectangleShape water({ 80 , 20 });
+    water.setOrigin({ 40,0 });
+    water.setPosition(Vector2f(640, 375));
+    water.setFillColor(Color(16, 112, 222, 100));
     while (window.isOpen()) {   
         Time d = dt.restart();
         float deltatime = d.asSeconds();
@@ -157,7 +157,7 @@ int main() {
         else {
             ispressed = false;
         }
-        
+        world.Buoyancy(EpsilonVector(640, 375), 1000);
         r.setPosition(EpToVec2(world.bodyList[0].position));
         world.Update(deltatime, 20);
         window.clear(Color::Black);
@@ -219,6 +219,7 @@ int main() {
             
         }
         window.draw(r);
+        window.draw(water);
         window.display();
     }
 
