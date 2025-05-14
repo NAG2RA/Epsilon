@@ -48,8 +48,8 @@ void EpsilonWorld::Update(float dt, int iterations)
 		UpdateMovement(dt,iterations);
 		ResolveThreadConnection();
 		ResolveSpringConnection();
-		AirResistance();
-		
+		AirResistance(dt);
+		Buoyancy(EpsilonVector(640, 375), 1);
 	}
 }
 
@@ -106,7 +106,7 @@ void EpsilonWorld::NarrowPhase() {
 
 void EpsilonWorld::UpdateMovement(float dt, int iterations) {
 	for (size_t i = 0; i < bodyList.size(); i++) {
-		bodyList[i].updateMovement(dt, gravity, iterations);
+		bodyList[i].updateMovement(dt,gravity, iterations);
 	}
 }
 
@@ -316,7 +316,7 @@ void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitu
 		EpsilonVector impulse = (dir * magnitude) / (dist*dist);
 		EpsilonVector horizontal(1.f, 0);
 		EpsilonVector vertical(0, 1.f);
-		float mag = min(abs(horizontal.Dot(impulse)), abs(vertical.Dot(impulse))) == abs(horizontal.Dot(impulse)) ? horizontal.Dot(impulse) : vertical.Dot(impulse);
+		float mag = (min(abs(horizontal.Dot(impulse)), abs(vertical.Dot(impulse))) == abs(horizontal.Dot(impulse) ? horizontal.Dot(impulse): vertical.Dot(impulse)));
 		bodyList[i].linearVelocity += impulse * bodyList[i].inverseMass;
 		bodyList[i].angularVelocity += mag * bodyList[i].inverseInertia;
 	}
@@ -329,14 +329,12 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
 		if (bodyList[i].shapetype == box) {
 			if (bodyList[i].position.y + bodyList[i].height / 2.f > surfacePosition.y) {
 				EpsilonVector dir(0, 1.f);
-				float h = bodyList[i].position.y + bodyList[i].height / 2.f - surfacePosition.y;
+				float h = bodyList[i].position.y + (bodyList[i].height/2.f) - surfacePosition.y;
 				if (h > bodyList[i].height) {
 					h = bodyList[i].height;
 				}
-				EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
-				resistance = -resistance * forceConstant*density * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
-				bodyList[i].AddForce(resistance);
-				EpsilonVector force = -dir * bodyList[i].width * h * 9.81f * density;
+				float damperForce = (damperConstant*bodyList[i].linearVelocity.Dot(dir))*h;
+				EpsilonVector force = -dir * ((bodyList[i].width * h * 9.81f * density)+damperForce);
 				bodyList[i].AddForce(force);
 			}
 		}
@@ -347,10 +345,10 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
 				if (h > bodyList[i].radius*2.f) {
 					h = bodyList[i].radius*2.f;
 				}
-				EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
-				resistance = -resistance * forceConstant * density * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
-				bodyList[i].AddForce(resistance);
-				EpsilonVector force = -dir * bodyList[i].radius * 2.f * h * 9.81f * density;
+				float r = bodyList[i].radius;
+				float area = r * r * acos(1 - (h / r)) - (r - h) * sqrt(r * r - (r - h) * (r - h));
+				float damperForce = (damperConstant * bodyList[i].linearVelocity.Dot(dir)) * h;
+				EpsilonVector force = -dir * ((area * 9.81f * density) + damperForce);
 				bodyList[i].AddForce(force);
 			}
 		}
@@ -361,17 +359,18 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
 				if (h > bodyList[i].height) {
 					h = bodyList[i].height;
 				}
-				EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
-				resistance = -resistance * forceConstant * density * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
-				bodyList[i].AddForce(resistance);
-				EpsilonVector force = -dir * bodyList[i].width * h * 9.81f * density;
+				float hTriangle = bodyList[i].height - h;
+				float sideTriangle = (hTriangle * bodyList[i].width) / bodyList[i].height;
+				float area = (sideTriangle + bodyList[i].width) * h / 2;
+				float damperForce = (damperConstant * bodyList[i].linearVelocity.Dot(dir)) * h;
+				EpsilonVector force = -dir * ((area * 9.81f * density) + damperForce);
 				bodyList[i].AddForce(force);
 			}
 		}
 	}
 }
 
-void EpsilonWorld::AirResistance()
+void EpsilonWorld::AirResistance(float dt)
 {
 	for (size_t i = 0; i < bodyList.size(); i++) {
 		if (bodyList[i].isStatic == true) {
@@ -379,6 +378,11 @@ void EpsilonWorld::AirResistance()
 		}
 		EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
 		resistance = -resistance * forceConstant * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
+		float angularResistance = -abs(bodyList[i].angularVelocity) * bodyList[i].angularVelocity * forceConstant/10;
+		if (angularResistance != 0) {
+			bodyList[i].angularVelocity += (angularResistance /bodyList[i].inertia)*dt;
+		}
+		
 		bodyList[i].AddForce(resistance);
 	}
 }

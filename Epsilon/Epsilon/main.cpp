@@ -34,7 +34,7 @@ int main() {
     ContextSettings settings;
     settings.antiAliasingLevel = 8;
     window.setFramerateLimit(320);   
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 0.5f, 0.5f, 30, 3, true, none));
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 30, 3, true, none));
     RectangleShape r({ 30,3 });
     r.setPosition(EpToVec2(world.bodyList[0].position));
     r.setOrigin({ 15,1.5 });
@@ -57,12 +57,12 @@ int main() {
                 if (contype == 0) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    world.AddBody(EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false, none));
+                    world.AddBody(EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, none));
                 }
                 else if (contype == 1) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false, spring);
+                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, spring);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -70,7 +70,7 @@ int main() {
                 else if (contype == 2) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 1, 0.5f, 2, 2, false, thread);
+                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, thread);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -85,12 +85,12 @@ int main() {
                 if (contype == 0) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false, none));
+                    world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 0.5f, 1, false, none));
                 }
                 else if (contype == 1) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false, spring);
+                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 0.5f, 1, false, spring);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -98,7 +98,7 @@ int main() {
                 else if (contype == 2) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1, 0.5f, 1, false, thread);
+                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 0.5f, 1, false, thread);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -112,7 +112,7 @@ int main() {
                 if (contype == 0) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    world.AddBody(EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, none));
+                    world.AddBody(EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1.5f, 0.5f, 2, false, none));
                 }
                 else if (contype == 1) {
                     Vector2i postemp = Mouse::getPosition(window);
@@ -157,7 +157,7 @@ int main() {
         else {
             ispressed = false;
         }
-        world.Buoyancy(EpsilonVector(640, 375), 1000);
+        
         r.setPosition(EpToVec2(world.bodyList[0].position));
         world.Update(deltatime, 20);
         window.clear(Color::Black);

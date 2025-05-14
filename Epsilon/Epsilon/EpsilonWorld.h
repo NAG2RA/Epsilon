@@ -36,6 +36,6 @@ public:
 	void ResolveSpringConnection();
 	void Explosion(EpsilonVector position, float radius, float magnitude);
 	void Buoyancy(EpsilonVector surfacePosition, float density);
-	void AirResistance();
+	void AirResistance(float dt);
 };
 

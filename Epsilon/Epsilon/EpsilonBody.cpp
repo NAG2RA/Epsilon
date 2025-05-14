@@ -98,6 +98,7 @@ EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density,
 
 EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, Connectiontype connectiontype)
 {
+	
 	float area = width * height;
 	if (area < minArea)
 	{
@@ -200,19 +201,18 @@ float EpsilonBody::Distance(EpsilonVector a, EpsilonVector b)
 	float dy = a.y - b.y;
 	return sqrt(dx * dx + dy * dy);
 }
-void EpsilonBody::updateMovement(float dt, EpsilonVector gravity,int iterations)
+void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations)
 {
 	if (isStatic) {
 		return;
 	}
 	dt = dt / (float)iterations;
 	EpsilonVector acceleration = force / mass;
+	acceleration += gravity;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
-	linearVelocity += gravity * dt;
 	linearVelocity += acceleration*dt;
 	angle += angularVelocity * dt;
-	angularVelocity *= .99999f;
 	position += linearVelocity * dt;
 	force = EpsilonVector({ 0,0 });
 }
