@@ -47,7 +47,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 		NarrowPhase();
 		UpdateMovement(dt,iterations);
 		ResolveThreadConnection();
-		ResolveSpringConnection();
+		ResolveSpringConnection(dt);
 		AirResistance(dt);
 		Buoyancy(EpsilonVector(640, 375), 1);
 	}
@@ -280,29 +280,36 @@ void EpsilonWorld::ResolveThreadConnection() {
 		if (bodyList[i].connectiontype == none|| bodyList[i].connectiontype == spring) {
 			continue;
 		}
-		else if (Collisions::Distance(bodyList[i].originPosition, bodyList[i].position) > bodyList[i].connectionDistance) {
-			EpsilonVector dir = bodyList[i].position - bodyList[i].originPosition;
+		else if (Collisions::Distance(bodyList[i].originPosition, bodyList[i].connectionPosition) > bodyList[i].connectionDistance) {
+			EpsilonVector dir = bodyList[i].connectionPosition - bodyList[i].originPosition;
 			float dist = dir.Length();
 			float restDist = dist - bodyList[i].connectionDistance;
 			float damperForce = -(damperThreadConstant * bodyList[i].linearVelocity.Dot(dir)) / dist;
 			bodyList[i].linearVelocity += -dir * (bodyList[i].inverseMass*restDist);
 			bodyList[i].AddForce(damperForce * dir);
+			EpsilonVector offset = bodyList[i].connectionPosition - bodyList[i].position;
+			bodyList[i].angularVelocity += offset.Cross(-dir * (bodyList[i].inverseMass * restDist));
 		}
 	}
 }
-void EpsilonWorld::ResolveSpringConnection() {
+void EpsilonWorld::ResolveSpringConnection(float dt) {
 	for (size_t i = 0; i < bodyList.size(); i++) {
 		if (bodyList[i].connectiontype == none || bodyList[i].connectiontype == thread) {
 			continue;
 		}
 		
-		EpsilonVector dir = bodyList[i].position - bodyList[i].originPosition;
+		EpsilonVector dir = bodyList[i].connectionPosition - bodyList[i].originPosition;
 		float dist = dir.Length();
 		float restDist = dist - bodyList[i].connectionDistance;
 		float springForce = -restDist * springConstant;
 		float damperForce = -(damperConstant * bodyList[i].linearVelocity.Dot(dir))/dist;
 		EpsilonVector force = (springForce+damperForce)*dir/dist;
 		bodyList[i].AddForce(force);
+		EpsilonVector offset = bodyList[i].connectionPosition - bodyList[i].position;
+		springForce = -abs(restDist) * springConstant;
+		force = (springForce + damperForce) * dir / dist;
+		float angularResistance = offset.Cross(force);
+		bodyList[i].angularVelocity += (angularResistance * bodyList[i].inverseInertia*damperConstant/springConstant) * dt;
 	}
 }
 void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitude)

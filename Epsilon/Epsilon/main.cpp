@@ -157,61 +157,64 @@ int main() {
         else {
             ispressed = false;
         }
-        
         r.setPosition(EpToVec2(world.bodyList[0].position));
         world.Update(deltatime, 20);
         window.clear(Color::Black);
         for (size_t i = 1; i < world.bodyList.size(); i++) {
-            if (world.bodyList[i].connectiontype == thread) {
-                VertexArray line(PrimitiveType::Lines, 2);
-                line[0].position = EpToVec2(world.bodyList[i].originPosition);
-                line[0].color = Color::Blue;
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                line[1].position = EpToVec2(world.bodyList[i].position);
-                line[1].color = Color::Blue;
-                window.draw(line);
-            }
-            else if (world.bodyList[i].connectiontype == spring) {
-                VertexArray line(PrimitiveType::Lines, 2);
-                line[0].position = EpToVec2(world.bodyList[i].originPosition);
-                line[0].color = Color::Green;
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                line[1].position = EpToVec2(world.bodyList[i].position);
-                line[1].color = Color::Green;
-                window.draw(line);
-            }
-            if (world.bodyList[i].shapetype == box) {
-                RectangleShape rc({ 2,2 });
-                rc.setOrigin({ 1,1 });
-                rc.setPosition(EpToVec2(world.bodyList[i].position));  
-                Angle angle = radians(world.bodyList[i].angle);
-                rc.setRotation(angle);
-                window.draw(rc);
-            }
-            else if (world.bodyList[i].shapetype == triangle) {
-                float rad = world.bodyList[i].width / sqrt(3);
-                CircleShape c(rad,3);
-                c.setOrigin({rad, world.bodyList[i].height*2.f/3.f });
-                c.setPosition(EpToVec2(world.bodyList[i].position));
-                Angle angle = radians(world.bodyList[i].angle);
-                c.setRotation(angle);
-                window.draw(c);
-            }
-            else {
-                CircleShape c(1);
-                c.setOrigin({ 1,1 });
-                c.setPosition(EpToVec2(world.bodyList[i].position));
-                Angle angle = radians(world.bodyList[i].angle);
-                c.setRotation(angle);
-                RectangleShape rc({ 1,0.1 });
-                rc.setPosition(EpToVec2(world.bodyList[i].position));
-                rc.setRotation(angle);
-                rc.setFillColor(Color::Red);
-                window.draw(c);
-                window.draw(rc);
-            }
+           
+                if (world.bodyList[i].shapetype == box) {
+                    RectangleShape rc({ 2,2 });
+                    rc.setOrigin({ 1,1 });
+                    rc.setPosition(EpToVec2(world.bodyList[i].position));
+                    Angle angle = radians(world.bodyList[i].angle);
+                    rc.setRotation(angle);
+                    window.draw(rc);
+                }
+                else if (world.bodyList[i].shapetype == triangle) {
+                    float rad = world.bodyList[i].width / sqrt(3);
+                    CircleShape c(rad, 3);
+                    c.setOrigin({ rad, world.bodyList[i].height * 2.f / 3.f });
+                    c.setPosition(EpToVec2(world.bodyList[i].position));
+                    Angle angle = radians(world.bodyList[i].angle);
+                    c.setRotation(angle);
+                    window.draw(c);
+                }
+                else {
+                    CircleShape c(1);
+                    c.setOrigin({ 1,1 });
+                    c.setPosition(EpToVec2(world.bodyList[i].position));
+                    Angle angle = radians(world.bodyList[i].angle);
+                    c.setRotation(angle);
+                    RectangleShape rc({ 1,0.1 });
+                    rc.setPosition(EpToVec2(world.bodyList[i].position));
+                    rc.setRotation(angle);
+                    rc.setFillColor(Color::Red);
+                    window.draw(c);
+                    window.draw(rc);
+                }
+                if (world.bodyList[i].connectiontype == thread) {
+                    VertexArray line(PrimitiveType::Lines, 2);
+                    line[0].position = EpToVec2(world.bodyList[i].originPosition);
+                    line[0].color = Color::Blue;
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    line[1].position = EpToVec2(world.bodyList[i].connectionPosition);
+                    line[1].color = Color::Blue;
+                    window.draw(line);
+                }
+                else if (world.bodyList[i].connectiontype == spring) {
+                    VertexArray line(PrimitiveType::Lines, 2);
+                    line[0].position = EpToVec2(world.bodyList[i].originPosition);
+                    line[0].color = Color::Green;
+                    Vector2i postemp = Mouse::getPosition(window);
+                    Vector2f pos = window.mapPixelToCoords(postemp);
+                    line[1].position = EpToVec2(world.bodyList[i].connectionPosition);
+                    line[1].color = Color::Green;
+                    window.draw(line);
+                }
+
+            
+            
             AABB box = world.bodyList[i].GetAABB();
             if (box.min.y > 400) {
                 world.RemoveBody(i);

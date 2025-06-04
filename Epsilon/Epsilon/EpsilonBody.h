@@ -26,7 +26,7 @@ class EpsilonBody
 public:
 	float angle, angularVelocity, inverseMass, connectionDistance;
 	float density, mass, restitution, area, radius, width, height, inertia, inverseInertia, dynamicFriction, staticFriction;
-	EpsilonVector position, linearVelocity, force, originPosition;
+	EpsilonVector position, linearVelocity, force, originPosition, connectionPosition;
 	AABB aabb;
 	bool isStatic;
 	Shapetype shapetype;

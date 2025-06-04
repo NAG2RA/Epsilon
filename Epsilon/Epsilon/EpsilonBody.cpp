@@ -6,6 +6,7 @@ float maxDensity = 21.4f;
 EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, float inertia, float restitution, float area, float radius, float width,
 	float height, vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype, Connectiontype connectiontype)
 	:position(position),
+
 	density(density),
 	mass(mass),
 	restitution(restitution),
@@ -42,6 +43,22 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 		vertices = {};
 		transformedVertices = {};
 	}
+	if (shapetype == box) {
+		EpsilonVector offset(0, -height / 2.f);
+		EpsilonVector rotOffset = Transform(offset, position, angle);
+		connectionPosition = rotOffset;
+	}
+	else if (shapetype == triangle) {
+		EpsilonVector offset(0, -height * 2.f / 3.f);
+		EpsilonVector rotOffset = Transform(offset, position, angle);
+		connectionPosition = rotOffset;
+	}
+	else {
+		EpsilonVector offset(0, -radius);
+		EpsilonVector rotOffset = Transform(offset, position, angle);
+		connectionPosition = rotOffset;
+	}
+	connectionPosition = position;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
 }
@@ -193,7 +210,7 @@ void EpsilonBody::CreateConnection(EpsilonVector origin) {
 		return;
 	}
 	originPosition = origin;
-	connectionDistance = Distance(position, origin);
+	connectionDistance = Distance(connectionPosition, origin);
 }
 float EpsilonBody::Distance(EpsilonVector a, EpsilonVector b)
 {
@@ -207,13 +224,28 @@ void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations
 		return;
 	}
 	dt = dt / (float)iterations;
-	EpsilonVector acceleration = force / mass;
+	EpsilonVector acceleration = force * inverseMass;
 	acceleration += gravity;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
 	linearVelocity += acceleration*dt;
 	angle += angularVelocity * dt;
 	position += linearVelocity * dt;
+	if (shapetype == box) {
+		EpsilonVector offset(0, -height / 2.f);
+		EpsilonVector rotOffset = Transform(offset, position, angle);
+		connectionPosition = rotOffset;
+	}
+	else if (shapetype == triangle) {
+		EpsilonVector offset(0, -height * 2.f / 3.f);
+		EpsilonVector rotOffset = Transform(offset, position, angle);
+		connectionPosition = rotOffset;
+	}
+	else {
+		EpsilonVector offset(0, -radius);
+		EpsilonVector rotOffset = Transform(offset, position, angle);
+		connectionPosition = rotOffset;
+	}
 	force = EpsilonVector({ 0,0 });
 }
 
