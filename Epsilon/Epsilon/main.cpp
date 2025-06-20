@@ -40,8 +40,8 @@ int main() {
     r.setOrigin({ 15,1.5 });
     bool ispressed = false;
     int contype = 0;
-    RectangleShape water({ 80 , 20 });
-    water.setOrigin({ 40,0 });
+    RectangleShape water({ 30 , 3 });
+    water.setOrigin({ 15, 0 });
     water.setPosition(Vector2f(640, 375));
     water.setFillColor(Color(16, 112, 222, 100));
     while (window.isOpen()) {   

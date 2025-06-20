@@ -7,7 +7,8 @@ EpsilonWorld::EpsilonWorld()
 	springConstant(50),
 	damperConstant(5),
 	damperThreadConstant(25),
-	forceConstant(0.05f)
+	airResistanceConstant(0.01f),
+	rotationalAirResistanceConstant(0.01f)
 {
 }
 
@@ -49,7 +50,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 		ResolveThreadConnection();
 		ResolveSpringConnection(dt);
 		AirResistance(dt);
-		Buoyancy(EpsilonVector(640, 375), 1);
+		Buoyancy(EpsilonVector(640, 375), 30, 3, 1);
 	}
 }
 
@@ -321,20 +322,19 @@ void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitu
 		EpsilonVector dir = bodyList[i].position - position;
 		float dist = dir.Length();
 		EpsilonVector impulse = (dir * magnitude) / (dist*dist);
-		EpsilonVector horizontal(1.f, 0);
 		EpsilonVector vertical(0, 1.f);
-		float mag = (min(abs(horizontal.Dot(impulse)), abs(vertical.Dot(impulse))) == abs(horizontal.Dot(impulse) ? horizontal.Dot(impulse): vertical.Dot(impulse)));
+		float mag = -vertical.Cross(impulse);
 		bodyList[i].linearVelocity += impulse * bodyList[i].inverseMass;
 		bodyList[i].angularVelocity += mag * bodyList[i].inverseInertia;
 	}
 }
-void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
+void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition,float width, float depth, float density) {
 	for (size_t i = 0; i < bodyList.size(); i++) {
 		if (bodyList[i].isStatic == true) {
 			continue;
 		}
 		if (bodyList[i].shapetype == box) {
-			if (bodyList[i].position.y + bodyList[i].height / 2.f > surfacePosition.y) {
+			if (bodyList[i].position.y + bodyList[i].height / 2.f > surfacePosition.y && bodyList[i].position.x < surfacePosition.x+(width/2.f) && bodyList[i].position.x > surfacePosition.x - (width / 2.f) && bodyList[i].position.y < surfacePosition.y + depth) {
 				EpsilonVector dir(0, 1.f);
 				float h = bodyList[i].position.y + (bodyList[i].height/2.f) - surfacePosition.y;
 				if (h > bodyList[i].height) {
@@ -346,7 +346,7 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
 			}
 		}
 		else if(bodyList[i].shapetype == circle){
-			if (bodyList[i].position.y + bodyList[i].radius > surfacePosition.y) {
+			if (bodyList[i].position.y + bodyList[i].radius > surfacePosition.y && bodyList[i].position.x < surfacePosition.x + width / 2.f && bodyList[i].position.x > surfacePosition.x - width / 2.f && bodyList[i].position.y < surfacePosition.y + depth) {
 				EpsilonVector dir(0, 1.f);
 				float h = bodyList[i].position.y + bodyList[i].radius - surfacePosition.y;
 				if (h > bodyList[i].radius*2.f) {
@@ -360,7 +360,7 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition, float density) {
 			}
 		}
 		else if (bodyList[i].shapetype == triangle) {
-			if (bodyList[i].position.y + bodyList[i].height / 3.f > surfacePosition.y) {
+			if (bodyList[i].position.y + bodyList[i].height / 3.f > surfacePosition.y && bodyList[i].position.x < surfacePosition.x + width / 2.f && bodyList[i].position.x > surfacePosition.x - width / 2.f && bodyList[i].position.y < surfacePosition.y + depth) {
 				EpsilonVector dir(0, 1.f);
 				float h = bodyList[i].position.y + bodyList[i].height / 3.f - surfacePosition.y;
 				if (h > bodyList[i].height) {
@@ -383,9 +383,9 @@ void EpsilonWorld::AirResistance(float dt)
 		if (bodyList[i].isStatic == true) {
 			continue;
 		}
-		EpsilonVector resistance = bodyList[i].linearVelocity.Normalized();
-		resistance = -resistance * forceConstant * bodyList[i].linearVelocity.Length() * bodyList[i].linearVelocity.Length();
-		float angularResistance = -abs(bodyList[i].angularVelocity) * bodyList[i].angularVelocity * forceConstant/10;
+		EpsilonVector resistance(bodyList[i].linearVelocity.x * bodyList[i].linearVelocity.x, bodyList[i].linearVelocity.y * bodyList[i].linearVelocity.y);
+		resistance = -resistance * airResistanceConstant;
+		float angularResistance = -abs(bodyList[i].angularVelocity) * bodyList[i].angularVelocity * rotationalAirResistanceConstant;
 		if (angularResistance != 0) {
 			bodyList[i].angularVelocity += (angularResistance /bodyList[i].inertia)*dt;
 		}
