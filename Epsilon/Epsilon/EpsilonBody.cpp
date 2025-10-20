@@ -73,22 +73,20 @@ EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density,
 	float area = radius * radius * 3.14f;
 	if (area < minArea) 
 	{
-		cout << "Size is too small, setting size to minimum value";
-		area = minArea;
+		cout << "Area of the EpsilonBody is too small";
 	}
 	else if (area > maxArea) 
 	{
-		cout << "Size is too big, setting size to maximum value";
-		area = maxArea;
+		cout << "Area of the EpsilonBody is too big";
 	}
 	if (density < minDensity)
 	{
-		cout << "Density is too small, setting density to minimum value";
+		cout << "Density of the EpsilonBody is too small, setting density to minimum value";
 		density = minDensity;
 	}
 	else if (density > maxDensity)
 	{
-		cout << "Density is too big, setting density to maximum value";
+		cout << "Density of the EpsilonBody is too big, setting density to maximum value";
 		density = maxDensity;
 	}
 	if (restitution > 1) 
@@ -119,22 +117,20 @@ EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, fl
 	float area = width * height;
 	if (area < minArea)
 	{
-		cout << "Size is too small, setting size to minimum value";
-		area = minArea;
+		cout << "Area of the EpsilonBody is too small";
 	}
 	else if (area > maxArea)
 	{
-		cout << "Size is too big, setting size to maximum value";
-		area = maxArea;
+		cout << "Area of the EpsilonBody is too big";
 	}
 	if (density < minDensity)
 	{
-		cout << "Density is too small, setting density to minimum value";
+		cout << "Density of the EpsilonBody is too small, setting density to minimum value";
 		density = minDensity;
 	}
 	else if (density > maxDensity)
 	{
-		cout << "Density is too big, setting density to maximum value";
+		cout << "Density of the EpsilonBody is too big, setting density to maximum value";
 		density = maxDensity;
 	}
 	if (restitution > 1)
@@ -164,22 +160,20 @@ EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float densit
 	float area = (side*side*sqrt(3))/4;
 	if (area < minArea)
 	{
-		cout << "Size is too small, setting size to minimum value";
-		area = minArea;
+		cout << "Area of the EpsilonBody is too small";
 	}
 	else if (area > maxArea)
 	{
-		cout << "Size is too big, setting size to maximum value";
-		area = maxArea;
+		cout << "Area of the EpsilonBody is too big";
 	}
 	if (density < minDensity)
 	{
-		cout << "Density is too small, setting density to minimum value";
+		cout << "Density of the EpsilonBody is too small, setting density to minimum value";
 		density = minDensity;
 	}
 	else if (density > maxDensity)
 	{
-		cout << "Density is too big, setting density to maximum value";
+		cout << "Density of the EpsilonBody is too big, setting density to maximum value";
 		density = maxDensity;
 	}
 	if (restitution > 1)
@@ -210,13 +204,7 @@ void EpsilonBody::CreateConnection(EpsilonVector origin) {
 		return;
 	}
 	originPosition = origin;
-	connectionDistance = Distance(connectionPosition, origin);
-}
-float EpsilonBody::Distance(EpsilonVector a, EpsilonVector b)
-{
-	float dx = a.x - b.x;
-	float dy = a.y - b.y;
-	return sqrt(dx * dx + dy * dy);
+	connectionDistance = connectionPosition.Distance(origin);
 }
 void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations)
 {
@@ -231,20 +219,22 @@ void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations
 	linearVelocity += acceleration*dt;
 	angle += angularVelocity * dt;
 	position += linearVelocity * dt;
-	if (shapetype == box) {
-		EpsilonVector offset(0, -height / 2.f);
-		EpsilonVector rotOffset = Transform(offset, position, angle);
-		connectionPosition = rotOffset;
-	}
-	else if (shapetype == triangle) {
-		EpsilonVector offset(0, -height * 2.f / 3.f);
-		EpsilonVector rotOffset = Transform(offset, position, angle);
-		connectionPosition = rotOffset;
-	}
-	else {
-		EpsilonVector offset(0, -radius);
-		EpsilonVector rotOffset = Transform(offset, position, angle);
-		connectionPosition = rotOffset;
+	if (connectiontype != none) {
+		if (shapetype == box) {
+			EpsilonVector offset(0, -height / 2.f);
+			EpsilonVector rotOffset = Transform(offset, position, angle);
+			connectionPosition = rotOffset;
+		}
+		else if (shapetype == triangle) {
+			EpsilonVector offset(0, -height * 2.f / 3.f);
+			EpsilonVector rotOffset = Transform(offset, position, angle);
+			connectionPosition = rotOffset;
+		}
+		else {
+			EpsilonVector offset(0, -radius);
+			EpsilonVector rotOffset = Transform(offset, position, angle);
+			connectionPosition = rotOffset;
+		}
 	}
 	force = EpsilonVector({ 0,0 });
 }

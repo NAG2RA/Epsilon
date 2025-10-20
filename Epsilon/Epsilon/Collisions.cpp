@@ -1,28 +1,16 @@
 #include "Collisions.h"
 
-float Collisions::Distance(EpsilonVector a, EpsilonVector b)
-{
-    float dx = a.x - b.x;
-    float dy = a.y - b.y;
-    return sqrt(dx*dx+dy*dy);
-}
-float Collisions::DistanceSquared(EpsilonVector a, EpsilonVector b)
-{
-    float dx = a.x - b.x;
-    float dy = a.y - b.y;
-    return (dx * dx + dy * dy);
-}
 bool Collisions::NearlyEqual(float a, float b) {
-    float nearlyEqual = 0.0005f;
+    float nearlyEqual = 0.0000005f;
     return abs(a - b) < nearlyEqual;
 }
 bool Collisions::NearlyEqual(EpsilonVector a, EpsilonVector b) {
     float nearlyEqual = 0.0005f;
-    return DistanceSquared(a,b)<nearlyEqual*nearlyEqual;
+    return a.DistanceSquared(b)<nearlyEqual*nearlyEqual;
 }
 bool Collisions::IntersectCircles(float radiusA, float radiusB, EpsilonVector centerA, EpsilonVector centerB, EpsilonVector& normal, float& depth)
 {
-    float dist = Distance(centerA, centerB);
+    float dist = centerA.Distance(centerB);
     float radii = radiusA + radiusB;
     if (dist >= radii) 
     {
@@ -270,11 +258,11 @@ void Collisions::ProjectVertices(vector<EpsilonVector> vertices, EpsilonVector a
 
 int Collisions::FindClosestPointOnPolygon(EpsilonVector Center, vector<EpsilonVector> vertices)
 {
-    int result = -1;
+    int result = 0;
     float minDistance = FLT_MAX;
     for (size_t i = 0; i < vertices.size(); i++) {
         EpsilonVector v = vertices[i];
-        float distance = Distance(v, Center);   
+        float distance = v.Distance(Center);
         if (distance < minDistance) {
             minDistance = distance;
             result = i;
@@ -290,20 +278,21 @@ bool Collisions::Collide(EpsilonBody bodyA, EpsilonBody bodyB, EpsilonVector& no
                 return true;
             }
         }
-        else {
+        else if (bodyB.shapetype == circle) {
+
             if (Collisions::IntersectPolygonAndCircle(bodyB.position, bodyA.position, bodyB.radius, bodyA.GetTransformedVertices(), normal, depth)) {
                 normal = -normal;
                 return true;
             }
         }
     }
-    else {
+    else if(bodyA.shapetype == circle) {
         if (bodyB.shapetype == box || bodyB.shapetype == triangle) {
             if (Collisions::IntersectPolygonAndCircle(bodyA.position, bodyA.radius, bodyB.GetTransformedVertices(), normal, depth)) {
                 return true;
             }
         }
-        else {
+        else if (bodyB.shapetype == circle) {
             if (Collisions::IntersectCircles(bodyA.radius, bodyB.radius, bodyA.position, bodyB.position, normal, depth)) {
                 return true;
             }
@@ -334,7 +323,7 @@ void Collisions::PointSegmentDistance(EpsilonVector p, EpsilonVector a, EpsilonV
     else {
         cp = a + ab * d;
     }
-    distanceSquared = DistanceSquared(p, cp);
+    distanceSquared = p.DistanceSquared(cp);
 }
 void Collisions::FindContactPoints(EpsilonBody bodyA, EpsilonBody bodyB, EpsilonVector& contact1, EpsilonVector& contact2, int& contactCount)
 {

@@ -60,6 +60,9 @@ float EpsilonVector::Length()
 EpsilonVector EpsilonVector::Normalized()
 {
     float len = Length();
+    if (len == 0) {
+        return EpsilonVector(0, 0);
+    }
     return EpsilonVector(x / len, y / len);
 }
 
@@ -71,5 +74,19 @@ float EpsilonVector::Dot(EpsilonVector a)
 float EpsilonVector::Cross(EpsilonVector a)
 {
     return x * a.y - y * a.x;
+}
+
+float EpsilonVector::Distance(EpsilonVector a)
+{
+    float dx = a.x - x;
+    float dy = a.y - y;
+    return sqrt(dx * dx + dy * dy);
+}
+
+float EpsilonVector::DistanceSquared(EpsilonVector a)
+{
+    float dx = a.x - x;
+    float dy = a.y - y;
+   return (dx* dx + dy * dy);
 }
 

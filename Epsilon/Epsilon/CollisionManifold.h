@@ -1,14 +1,6 @@
 #pragma once
-#include<SFML/Graphics.hpp>
-#include<SFML/Window.hpp>
-#include<SFML/System.hpp>
-#include<iostream>
-#include<vector>
-#include<cmath>
 #include"EpsilonBody.h"
 #include"EpsilonVector.h"
-using namespace sf;
-using namespace std;
 class CollisionManifold
 {
 public:

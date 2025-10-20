@@ -1,9 +1,4 @@
 #pragma once
-#include<SFML/Graphics.hpp>
-#include<SFML/Window.hpp>
-#include<SFML/System.hpp>
-#include<iostream>
-#include<vector>
 #include<cmath>
 using namespace std;
 class EpsilonVector
@@ -25,5 +20,7 @@ public:
 	EpsilonVector Normalized();
 	float Dot(EpsilonVector a);
 	float Cross(EpsilonVector a);
+	float Distance(EpsilonVector a);
+	float DistanceSquared(EpsilonVector a);
 };
 

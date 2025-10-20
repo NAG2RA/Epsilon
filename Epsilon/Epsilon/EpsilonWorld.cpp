@@ -8,7 +8,11 @@ EpsilonWorld::EpsilonWorld()
 	damperConstant(5),
 	damperThreadConstant(25),
 	airResistanceConstant(0.01f),
-	rotationalAirResistanceConstant(0.01f)
+	rotationalAirResistanceConstant(0.01f),
+	waterDensity(0),
+	waterDepth(0),
+	waterWidth(0),
+	waterSurfacePosition(0,0)
 {
 }
 
@@ -22,15 +26,14 @@ void EpsilonWorld::RemoveBody(int index)
 	bodyList.erase(bodyList.begin() + index);
 }
 
-bool EpsilonWorld::GetBody(float index,EpsilonBody& body)
+EpsilonBody EpsilonWorld::GetBody(float index)
 {
-	if (index < bodyList.size()) {
-		return true;
-	}
-	else {
-		cout << "Index was out of bounds";
-		return false;
-	}
+		return bodyList[index];
+}
+
+int EpsilonWorld::GetBodyCount()
+{
+	return bodyList.size();
 }
 
 void EpsilonWorld::Update(float dt, int iterations)
@@ -38,11 +41,11 @@ void EpsilonWorld::Update(float dt, int iterations)
 	if (iterations < 1) {
 		iterations = 1;
 	}
-	else if (iterations > 128) {
-		iterations = 128;
+	else if (iterations > 32) {
+		iterations = 32;
 	}
 	for (int it = 0; it < iterations; it++) {
-		
+
 		contactPairs.clear();
 		BroadPhase();
 		NarrowPhase();
@@ -50,7 +53,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 		ResolveThreadConnection();
 		ResolveSpringConnection(dt);
 		AirResistance(dt);
-		Buoyancy(EpsilonVector(640, 375), 30, 3, 1);
+		Buoyancy(waterSurfacePosition, waterWidth, waterDepth, waterDensity);
 	}
 }
 
@@ -68,24 +71,27 @@ void EpsilonWorld::SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, Epsilo
 }
 
 void EpsilonWorld::BroadPhase() {
-	for (size_t i = 0; i < bodyList.size() - 1; i++) {
-		for (size_t j = i + 1; j < bodyList.size(); j++) {
+	if (bodyList.size() == 0) {
+		return;
+	}
+	for (int i = 0; i < bodyList.size() - 1; i++) {
+		for (int j = i + 1; j < bodyList.size(); j++) {
 			if (bodyList[i].isStatic && bodyList[j].isStatic) {
 				continue;
 			}
 			if (!Collisions::IntersectAABB(bodyList[i].GetAABB(), bodyList[j].GetAABB())) {
 				continue;
 			}
-			
-				contactPairs.push_back(make_tuple(i, j));
-				
-			
+
+			contactPairs.push_back(make_tuple(i, j));
+
+
 		}
 	}
 }
 
 void EpsilonWorld::NarrowPhase() {
-	for (size_t i = 0; i < contactPairs.size(); i++) {
+	for (int i = 0; i < contactPairs.size(); i++) {
 		tuple<size_t, size_t> t = contactPairs[i];
 		EpsilonBody& bodyA = bodyList[get<0>(t)];
 		EpsilonBody& bodyB = bodyList[get<1>(t)];
@@ -106,7 +112,7 @@ void EpsilonWorld::NarrowPhase() {
 }
 
 void EpsilonWorld::UpdateMovement(float dt, int iterations) {
-	for (size_t i = 0; i < bodyList.size(); i++) {
+	for (int i = 0; i < bodyList.size(); i++) {
 		bodyList[i].updateMovement(dt,gravity, iterations);
 	}
 }
@@ -121,7 +127,7 @@ void EpsilonWorld::ResolveCollisonBasic(CollisionManifold& manifold)
 	if (relativeVelocity.Dot(normal) > 0.f) {
 		return;
 	}
-	float e = min(bodyA.restitution, bodyB.restitution);
+	float e = max(bodyA.restitution, bodyB.restitution);
 	float j = -(1 + e) * relativeVelocity.Dot(normal);
 	j /= bodyA.inverseMass+bodyB.inverseMass;
 	EpsilonVector impulse = j * normal;
@@ -137,7 +143,7 @@ void EpsilonWorld::ResolveCollisonWithRotation(CollisionManifold& manifold)
 	EpsilonVector contact1 = manifold.contact1;
 	EpsilonVector contact2 = manifold.contact2;
 	int contactCount = manifold.contactCount;
-	float e = min(bodyA.restitution, bodyB.restitution);
+	float e = max(bodyA.restitution, bodyB.restitution);
 	vector<EpsilonVector> contactList = { contact1,contact2 };
 	vector<EpsilonVector> impulseList(2);
 	vector<EpsilonVector> raList(2);
@@ -186,7 +192,7 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 	EpsilonVector contact1 = manifold.contact1;
 	EpsilonVector contact2 = manifold.contact2;
 	int contactCount = manifold.contactCount;
-	float e = min(bodyA.restitution, bodyB.restitution);
+	float e = max(bodyA.restitution, bodyB.restitution);
 	vector<EpsilonVector> contactList = { contact1,contact2 };
 	vector<EpsilonVector> impulseList(2);
 	vector<EpsilonVector> raList(2);
@@ -251,9 +257,9 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		float jt = -relativeVelocity.Dot(tangent);
 		float raPerpDotT = raPerp.Dot(tangent);
 		float rbPerpDotT = rbPerp.Dot(tangent);
-		float denom = bodyA.inverseMass + bodyB.inverseMass +
-			(raPerpDotT * raPerpDotT) * bodyA.inverseInertia +
-			(rbPerpDotT * rbPerpDotT) * bodyB.inverseInertia;
+		float denom = (bodyA.inverseMass + bodyB.inverseMass) +
+			((raPerpDotT * raPerpDotT) * bodyA.inverseInertia) +
+			((rbPerpDotT * rbPerpDotT) * bodyB.inverseInertia);
 		jt /= denom;
 		jt /= (float)contactCount;
 		EpsilonVector frictionImpulse;
@@ -281,7 +287,7 @@ void EpsilonWorld::ResolveThreadConnection() {
 		if (bodyList[i].connectiontype == none|| bodyList[i].connectiontype == spring) {
 			continue;
 		}
-		else if (Collisions::Distance(bodyList[i].originPosition, bodyList[i].connectionPosition) > bodyList[i].connectionDistance) {
+		else if (bodyList[i].originPosition.Distance(bodyList[i].connectionPosition) > bodyList[i].connectionDistance) {
 			EpsilonVector dir = bodyList[i].connectionPosition - bodyList[i].originPosition;
 			float dist = dir.Length();
 			float restDist = dist - bodyList[i].connectionDistance;
@@ -316,7 +322,7 @@ void EpsilonWorld::ResolveSpringConnection(float dt) {
 void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitude)
 {
 	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (Collisions::Distance(bodyList[i].position, position) > radius) {
+		if (bodyList[i].position.Distance(position) > radius) {
 			continue;
 		}
 		EpsilonVector dir = bodyList[i].position - position;
@@ -375,6 +381,14 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition,float width, float dep
 			}
 		}
 	}
+}
+
+void EpsilonWorld::CreateWater(EpsilonVector surfacePosition, float width, float depth, float density)
+{
+	waterSurfacePosition = surfacePosition;
+	waterDensity = density;
+	waterWidth = width;
+	waterDepth = depth;
 }
 
 void EpsilonWorld::AirResistance(float dt)

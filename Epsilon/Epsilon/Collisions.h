@@ -1,20 +1,10 @@
 #pragma once
-#include<SFML/Graphics.hpp>
-#include<SFML/Window.hpp>
-#include<SFML/System.hpp>
-#include<iostream>
 #include<vector>
-#include<cmath>
-#include<limits>
 #include"EpsilonBody.h"
 #include"EpsilonVector.h"
-using namespace sf;
-using namespace std;
 class Collisions
 {
 public:
-	static float Distance(EpsilonVector a, EpsilonVector b);
-	static float DistanceSquared(EpsilonVector a, EpsilonVector b);
 	static bool NearlyEqual(float a, float b);
 	static bool NearlyEqual(EpsilonVector a, EpsilonVector b);
 	static bool IntersectCircles(float radiusA,float radiusB, EpsilonVector centerA, EpsilonVector centerB, EpsilonVector& normal,float& depth);
