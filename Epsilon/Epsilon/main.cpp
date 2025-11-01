@@ -21,20 +21,29 @@ EpsilonVector Vec2ToEp(Vector2f c) {
 }
 int main() {  
     srand(time(0));
+    float timer = 0.02f;
     EpsilonWorld world;
     EpsilonVector origin;
     Clock dt;
     RenderWindow window(VideoMode({ 1280,720 }), "Epsilon");
     View v = window.getDefaultView();
-    v.zoom(.05f);
+    v.zoom(.5f);
     window.setView(v);
     ContextSettings settings;
     settings.antiAliasingLevel = 0;
     window.setFramerateLimit(320);   
-   world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 30, 3, true, none));
-   RectangleShape r({ 30,3 });
+   world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 300, 3, true, none));
+   RectangleShape r({ 300,3 });
     r.setPosition(EpToVec2(world.GetBody(0).position));
-    r.setOrigin({ 15,1.5 });
+    r.setOrigin({ 150,1.5 });
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(740, 370), 1.f, 0.5f, 3, 300, true, none));
+    RectangleShape r1({ 3,300 });
+    r1.setPosition(EpToVec2(world.GetBody(1).position));
+    r1.setOrigin({ 1.5,150 });
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(540, 370), 1.f, 0.5f, 3, 300, true, none));
+    RectangleShape r2({ 3,300 });
+    r2.setPosition(EpToVec2(world.GetBody(2).position));
+    r2.setOrigin({ 1.5,150 });
     bool ispressed = false;
     int contype = 0;
     RectangleShape water({ 30 , 3 });
@@ -42,6 +51,7 @@ int main() {
     water.setPosition(Vector2f(640, 375));
     world.CreateWater(EpsilonVector(640, 375), 30, 3, 1);
     water.setFillColor(Color(16, 112, 222, 100));
+    
     while (window.isOpen()) {  
         Time d = dt.restart();
         float deltatime = d.asSeconds();
@@ -50,6 +60,7 @@ int main() {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
+        
         if (Mouse::isButtonPressed(Mouse::Button::Left)) {
             if (!ispressed) {
                 if (contype == 0) {
@@ -68,7 +79,7 @@ int main() {
                 else if (contype == 2) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, thread);
+                    EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, thr);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -78,7 +89,7 @@ int main() {
             ispressed = true;
         }
         else if (Mouse::isButtonPressed(Mouse::Button::Right)) {
-
+            
             if (!ispressed) {
                 if (contype == 0) {
                     Vector2i postemp = Mouse::getPosition(window);
@@ -96,7 +107,7 @@ int main() {
                 else if (contype == 2) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, thread);
+                    EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, thr);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -123,7 +134,7 @@ int main() {
                 else if (contype == 2) {
                     Vector2i postemp = Mouse::getPosition(window);
                     Vector2f pos = window.mapPixelToCoords(postemp);
-                    EpsilonBody body = EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, thread);
+                    EpsilonBody body = EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, thr);
                     body.CreateConnection(origin);
                     world.AddBody(body);
                     contype = 0;
@@ -151,6 +162,18 @@ int main() {
             Vector2i postemp = Mouse::getPosition(window);
             Vector2f pos = window.mapPixelToCoords(postemp);
             origin = Vec2ToEp(pos);
+        }
+        else if (Keyboard::isKeyPressed(Keyboard::Key::H)) {
+            timer -= deltatime;
+            if (timer <= 0) {
+                Vector2i postemp = Mouse::getPosition(window);
+                Vector2f pos = window.mapPixelToCoords(postemp);
+                world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, none));
+                timer = 0.02f;
+            }
+        }
+        else if (Keyboard::isKeyPressed(Keyboard::Key::Q)) {
+            cout << world.GetBodyCount() << endl;
         }
         else {
             ispressed = false;
@@ -190,7 +213,7 @@ int main() {
                     window.draw(c);
                     window.draw(rc);
                 }
-                if (world.GetBody(i).connectiontype == thread) {
+                if (world.GetBody(i).connectiontype == thr) {
                     VertexArray line(PrimitiveType::Lines, 2);
                     line[0].position = EpToVec2(world.GetBody(i).originPosition);
                     line[0].color = Color::Blue;
@@ -220,6 +243,8 @@ int main() {
             
         }
         window.draw(r);
+        window.draw(r1);
+        window.draw(r2);
         window.draw(water);
         window.display();
     }

@@ -12,7 +12,7 @@ enum Shapetype {
 };
 enum Connectiontype {
 	none = 0,
-	thread = 1,
+	thr = 1,
 	spring = 2
 };
 class EpsilonBody

@@ -12,7 +12,9 @@ EpsilonWorld::EpsilonWorld()
 	waterDensity(0),
 	waterDepth(0),
 	waterWidth(0),
-	waterSurfacePosition(0,0)
+	waterSurfacePosition(0,0),
+	gridCellSizeX(0),
+	gridCellSizeY(0)
 {
 }
 
@@ -45,9 +47,8 @@ void EpsilonWorld::Update(float dt, int iterations)
 		iterations = 32;
 	}
 	for (int it = 0; it < iterations; it++) {
-
 		contactPairs.clear();
-		BroadPhase();
+		BroadPhase(1280, 720, 64, 0.5f);
 		NarrowPhase();
 		UpdateMovement(dt,iterations);
 		ResolveThreadConnection();
@@ -56,6 +57,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 		Buoyancy(waterSurfacePosition, waterWidth, waterDepth, waterDensity);
 	}
 }
+
 
 void EpsilonWorld::SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv) {
 	if (!bodyA.isStatic && !bodyB.isStatic) {
@@ -70,31 +72,76 @@ void EpsilonWorld::SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, Epsilo
 	}
 }
 
-void EpsilonWorld::BroadPhase() {
+void EpsilonWorld::BroadPhase(float windowWidth, float windowHeight, int cellCount, float zoom) {
 	if (bodyList.size() == 0) {
 		return;
 	}
-	for (int i = 0; i < bodyList.size() - 1; i++) {
-		for (int j = i + 1; j < bodyList.size(); j++) {
-			if (bodyList[i].isStatic && bodyList[j].isStatic) {
-				continue;
+	grid.clear();
+	cellCount = sqrt(cellCount);
+	gridCellSizeX = windowWidth * zoom / cellCount;
+	gridCellSizeY = windowHeight * zoom / cellCount;
+	float offsetX = (windowWidth - windowWidth * zoom) / 2.f;
+	float offsetY = (windowHeight - windowHeight * zoom) / 2.f;
+	grid.resize(cellCount);
+
+	for (int i = 0; i < grid.size(); i++) {
+		grid[i].resize(cellCount);
+		for (int j = 0; j < grid[i].size(); j++) {
+
+			for (int k = 0; k < bodyList.size(); k++) {
+				const AABB& aabb = bodyList[k].GetAABB();
+
+				if (aabb.min.x > j * gridCellSizeX + offsetX && aabb.min.x<j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y > i * gridCellSizeY + offsetY && aabb.min.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
+				else if (aabb.min.x > j * gridCellSizeX + offsetX && aabb.min.x<j * gridCellSizeX + gridCellSizeX + offsetX && aabb.max.y > i * gridCellSizeY + offsetY && aabb.max.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
+				else if (aabb.max.x > j * gridCellSizeX + offsetX && aabb.max.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.max.y > i * gridCellSizeY + offsetY && aabb.max.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
+				else if (aabb.max.x > j * gridCellSizeX + offsetX && aabb.max.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y > i * gridCellSizeY + offsetY && aabb.min.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
+				else if (aabb.min.x < j * gridCellSizeX + offsetX && aabb.max.x > j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y < i * gridCellSizeY + offsetY && aabb.max.y > i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
+				else if (aabb.min.x < j * gridCellSizeX + offsetX && aabb.max.x > j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y > i * gridCellSizeY + offsetY && aabb.min.y < i * gridCellSizeY + gridCellSizeY + offsetY || aabb.min.x < j * gridCellSizeX + offsetX && aabb.max.x > j * gridCellSizeX + gridCellSizeX + offsetX && aabb.max.y > i * gridCellSizeY + offsetY && aabb.max.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
+				else if (aabb.min.x > j * gridCellSizeX + offsetX && aabb.min.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y < i * gridCellSizeY + offsetY && aabb.max.y > i * gridCellSizeY + gridCellSizeY + offsetY || aabb.max.x > j * gridCellSizeX + offsetX && aabb.max.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y < i * gridCellSizeY + offsetY && aabb.max.y > i * gridCellSizeY + gridCellSizeY + offsetY) {
+					grid[i][j].push_back(&bodyList[k]);
+				}
 			}
-			if (!Collisions::IntersectAABB(bodyList[i].GetAABB(), bodyList[j].GetAABB())) {
-				continue;
+			for (int k = 0; k < grid[i][j].size(); k++) {
+				for (int f = k + 1; f < grid[i][j].size(); f++) {
+
+					if (grid[i][j][k]->isStatic && grid[i][j][f]->isStatic) {
+						continue;
+
+					}
+					if (!Collisions::IntersectAABB(grid[i][j][k]->GetAABB(), grid[i][j][f]->GetAABB())) {
+
+						continue;
+
+					}
+					vector<int> t = { i,j,k,f };
+					contactPairs.push_back(t);
+
+
+				}
 			}
-
-			contactPairs.push_back(make_tuple(i, j));
-
-
 		}
 	}
+
 }
 
 void EpsilonWorld::NarrowPhase() {
 	for (int i = 0; i < contactPairs.size(); i++) {
-		tuple<size_t, size_t> t = contactPairs[i];
-		EpsilonBody& bodyA = bodyList[get<0>(t)];
-		EpsilonBody& bodyB = bodyList[get<1>(t)];
+		vector<int> t = contactPairs[i];
+		EpsilonBody& bodyA = *grid[t[0]][t[1]][t[2]];
+		EpsilonBody& bodyB = *grid[t[0]][t[1]][t[3]];
+		
 		if (Collisions::Collide(bodyA, bodyB, normal, depth)) {
 			
 			SeperateBodies(bodyA, bodyB, normal * depth);
@@ -113,7 +160,7 @@ void EpsilonWorld::NarrowPhase() {
 
 void EpsilonWorld::UpdateMovement(float dt, int iterations) {
 	for (int i = 0; i < bodyList.size(); i++) {
-		bodyList[i].updateMovement(dt,gravity, iterations);
+		bodyList[i].updateMovement(dt, gravity, iterations);
 	}
 }
 
@@ -282,6 +329,29 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyB.angularVelocity += rb.Cross(frictionImpulse) * bodyB.inverseInertia;
 	}
 }
+void EpsilonWorld::ZoZoResolveCollisonBasic(CollisionManifold& manifold)
+{
+	EpsilonBody& bodyA = manifold.bodyA;
+	EpsilonBody& bodyB = manifold.bodyB;
+	EpsilonVector normal = manifold.normal;
+	float g0 = 0.001f;
+	EpsilonVector n = manifold.contact2 - manifold.contact1;
+	n = n.Normalized();
+	float g = n.Dot(manifold.contact2 - manifold.contact1);
+	g = max(g, g0 * 0.1f);
+	float diff = (g - g0) / g0;
+	float mass = 1.0f / (bodyA.inverseMass + bodyB.inverseMass);
+	float k = mass / (g * g);
+	float e = min(bodyA.restitution, bodyB.restitution);
+	if (g < g0) {
+		float f = -(1+e) * k * diff * diff;
+	EpsilonVector impulse = f*normal;
+	bodyA.linearVelocity -= impulse;
+	bodyB.linearVelocity += impulse;
+
+	}
+	
+}
 void EpsilonWorld::ResolveThreadConnection() {
 	for (size_t i = 0; i < bodyList.size(); i++) {
 		if (bodyList[i].connectiontype == none|| bodyList[i].connectiontype == spring) {
@@ -301,7 +371,7 @@ void EpsilonWorld::ResolveThreadConnection() {
 }
 void EpsilonWorld::ResolveSpringConnection(float dt) {
 	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].connectiontype == none || bodyList[i].connectiontype == thread) {
+		if (bodyList[i].connectiontype == none || bodyList[i].connectiontype == thr) {
 			continue;
 		}
 		
