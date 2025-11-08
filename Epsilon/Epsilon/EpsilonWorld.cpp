@@ -1,5 +1,82 @@
 #include "EpsilonWorld.h"
+class QuadTree {
+public:
+	int nodeCapacity;
+	AABB aabb;
+	vector<EpsilonBody*> bodies;
+	std::unique_ptr<QuadTree> nw, ne, sw, se;
 
+	QuadTree(AABB ab, int capacity = 5)
+		:
+		aabb(ab.min.x, ab.max.x, ab.min.y, ab.max.y),
+		nodeCapacity(capacity)
+	{
+	}
+
+	void query(AABB area, vector<EpsilonBody*>& found) {
+		if (!Collisions::IntersectAABB(area, aabb)) {
+			return;
+		}
+
+		if (divided) {
+			nw->query(area, found);
+			ne->query(area, found);
+			sw->query(area, found);
+			se->query(area, found);
+		}
+		else {
+			for (int i = 0; i < bodies.size(); i++) {
+				if (Collisions::IntersectAABB(area, bodies[i]->GetAABB())) {
+					found.push_back(bodies[i]);
+				}
+			}
+		}
+	}
+
+	bool insert(EpsilonBody* body) {
+		if (!Collisions::IntersectAABB(aabb, body->GetAABB())) {
+			return false;
+		}
+
+		if (!divided) {
+			if (bodies.size() < nodeCapacity) {
+				bodies.push_back(body);
+				return true;
+			}
+
+			subdivide();
+		}
+
+		bool inserted_nw = nw->insert(body);
+		bool inserted_ne = ne->insert(body);
+		bool inserted_sw = sw->insert(body);
+		bool inserted_se = se->insert(body);
+
+		return inserted_nw || inserted_ne || inserted_sw || inserted_se;
+	}
+
+private:
+	bool divided = false;
+	void subdivide() {
+		float midX = (aabb.min.x + aabb.max.x) / 2.f;
+		float midY = (aabb.min.y + aabb.max.y) / 2.f;
+
+		nw = make_unique<QuadTree>(AABB(aabb.min.x, midX, aabb.min.y, midY), nodeCapacity);
+		ne = make_unique<QuadTree>(AABB(midX, aabb.max.x, aabb.min.y, midY), nodeCapacity);
+		sw = make_unique<QuadTree>(AABB(aabb.min.x, midX, midY, aabb.max.y), nodeCapacity);
+		se = make_unique<QuadTree>(AABB(midX, aabb.max.x, midY, aabb.max.y), nodeCapacity);
+
+		divided = true;
+
+		for (EpsilonBody* bd : bodies) {
+			nw->insert(bd);
+			ne->insert(bd);
+			sw->insert(bd);
+			se->insert(bd);
+		}
+		bodies.clear();
+	}
+};
 EpsilonWorld::EpsilonWorld()
 	:depth(0),
 	normal(0,0),
@@ -12,9 +89,7 @@ EpsilonWorld::EpsilonWorld()
 	waterDensity(0),
 	waterDepth(0),
 	waterWidth(0),
-	waterSurfacePosition(0,0),
-	gridCellSizeX(0),
-	gridCellSizeY(0)
+	waterSurfacePosition(0,0)
 {
 }
 
@@ -30,7 +105,7 @@ void EpsilonWorld::RemoveBody(int index)
 
 EpsilonBody EpsilonWorld::GetBody(float index)
 {
-		return bodyList[index];
+	return bodyList[index];
 }
 
 int EpsilonWorld::GetBodyCount()
@@ -46,104 +121,69 @@ void EpsilonWorld::Update(float dt, int iterations)
 	else if (iterations > 32) {
 		iterations = 32;
 	}
+	PreFiltering();
+	for (int it = 0; it < iterations / 2; it++) {
+		UpdateMovement(dt, iterations/2);
+	}
 	for (int it = 0; it < iterations; it++) {
 		contactPairs.clear();
-		BroadPhase(1280, 720, 64, 0.5f);
+		BroadPhase(1280, 720, 0.2f);
 		NarrowPhase();
-		UpdateMovement(dt,iterations);
-		ResolveThreadConnection();
-		ResolveSpringConnection(dt);
-		AirResistance(dt);
-		Buoyancy(waterSurfacePosition, waterWidth, waterDepth, waterDensity);
 	}
+	ResolveThreadConnection();
+	ResolveSpringConnection(dt);
+	AirResistance(dt);
+	Buoyancy(waterSurfacePosition, waterWidth, waterDepth, waterDensity);
 }
 
 
 void EpsilonWorld::SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv) {
-	if (!bodyA.isStatic && !bodyB.isStatic) {
-		bodyA.Move(-mtv / 2.f);
-		bodyB.Move(mtv / 2.f);
-	}
-	else if (bodyA.isStatic) {
-		bodyB.Move(mtv);
-	}
-	else if (bodyB.isStatic) {
-		bodyA.Move(-mtv);
+	bodyA.Move((-mtv / 2.f) * !bodyA.isStatic);
+	bodyB.Move((mtv/2.f) * !bodyB.isStatic);
+}
+
+void EpsilonWorld::PreFiltering()
+{
+	dynamicBodyList.clear();
+	for (int i = 0; i < bodyList.size(); i++) {
+		if(!bodyList[i].isStatic) {
+			dynamicBodyList.push_back(&bodyList[i]);
+		}
 	}
 }
 
-void EpsilonWorld::BroadPhase(float windowWidth, float windowHeight, int cellCount, float zoom) {
-	if (bodyList.size() == 0) {
-		return;
-	}
-	grid.clear();
-	cellCount = sqrt(cellCount);
-	gridCellSizeX = windowWidth * zoom / cellCount;
-	gridCellSizeY = windowHeight * zoom / cellCount;
-	float offsetX = (windowWidth - windowWidth * zoom) / 2.f;
-	float offsetY = (windowHeight - windowHeight * zoom) / 2.f;
-	grid.resize(cellCount);
-
-	for (int i = 0; i < grid.size(); i++) {
-		grid[i].resize(cellCount);
-		for (int j = 0; j < grid[i].size(); j++) {
-
-			for (int k = 0; k < bodyList.size(); k++) {
-				const AABB& aabb = bodyList[k].GetAABB();
-
-				if (aabb.min.x > j * gridCellSizeX + offsetX && aabb.min.x<j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y > i * gridCellSizeY + offsetY && aabb.min.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
+void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
+		if (dynamicBodyList.size() == 0) {
+			return;
+		}
+		float offsetX((windowWidth - windowWidth * zoom) / 2.f);
+		float offsetY((windowHeight - windowHeight * zoom) / 2.f);
+		unique_ptr<QuadTree> qtree = make_unique<QuadTree>(AABB(offsetX, windowWidth * zoom + offsetX, offsetY, windowHeight * zoom + offsetY), 30);
+		for (int i = 0; i < bodyList.size(); i++) {
+			qtree->insert(&bodyList[i]);
+		}
+		for (int i = 0; i < dynamicBodyList.size(); i++) {
+			potentialColliders.clear();
+			qtree->query(dynamicBodyList[i]->GetAABB(), potentialColliders);
+			for (int j = 0; j < potentialColliders.size(); j++) {
+				if (dynamicBodyList[i] == potentialColliders[j]) {
+					continue;
 				}
-				else if (aabb.min.x > j * gridCellSizeX + offsetX && aabb.min.x<j * gridCellSizeX + gridCellSizeX + offsetX && aabb.max.y > i * gridCellSizeY + offsetY && aabb.max.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
-				}
-				else if (aabb.max.x > j * gridCellSizeX + offsetX && aabb.max.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.max.y > i * gridCellSizeY + offsetY && aabb.max.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
-				}
-				else if (aabb.max.x > j * gridCellSizeX + offsetX && aabb.max.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y > i * gridCellSizeY + offsetY && aabb.min.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
-				}
-				else if (aabb.min.x < j * gridCellSizeX + offsetX && aabb.max.x > j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y < i * gridCellSizeY + offsetY && aabb.max.y > i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
-				}
-				else if (aabb.min.x < j * gridCellSizeX + offsetX && aabb.max.x > j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y > i * gridCellSizeY + offsetY && aabb.min.y < i * gridCellSizeY + gridCellSizeY + offsetY || aabb.min.x < j * gridCellSizeX + offsetX && aabb.max.x > j * gridCellSizeX + gridCellSizeX + offsetX && aabb.max.y > i * gridCellSizeY + offsetY && aabb.max.y < i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
-				}
-				else if (aabb.min.x > j * gridCellSizeX + offsetX && aabb.min.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y < i * gridCellSizeY + offsetY && aabb.max.y > i * gridCellSizeY + gridCellSizeY + offsetY || aabb.max.x > j * gridCellSizeX + offsetX && aabb.max.x < j * gridCellSizeX + gridCellSizeX + offsetX && aabb.min.y < i * gridCellSizeY + offsetY && aabb.max.y > i * gridCellSizeY + gridCellSizeY + offsetY) {
-					grid[i][j].push_back(&bodyList[k]);
-				}
-			}
-			for (int k = 0; k < grid[i][j].size(); k++) {
-				for (int f = k + 1; f < grid[i][j].size(); f++) {
 
-					if (grid[i][j][k]->isStatic && grid[i][j][f]->isStatic) {
-						continue;
+				vector<EpsilonBody*> t = { dynamicBodyList[i], potentialColliders[j] };
+				contactPairs.push_back(t);
 
-					}
-					if (!Collisions::IntersectAABB(grid[i][j][k]->GetAABB(), grid[i][j][f]->GetAABB())) {
-
-						continue;
-
-					}
-					vector<int> t = { i,j,k,f };
-					contactPairs.push_back(t);
-
-
-				}
 			}
 		}
-	}
-
+	
 }
 
 void EpsilonWorld::NarrowPhase() {
 	for (int i = 0; i < contactPairs.size(); i++) {
-		vector<int> t = contactPairs[i];
-		EpsilonBody& bodyA = *grid[t[0]][t[1]][t[2]];
-		EpsilonBody& bodyB = *grid[t[0]][t[1]][t[3]];
-		
+		vector<EpsilonBody*> t = contactPairs[i];
+		EpsilonBody& bodyA = *t[0];
+		EpsilonBody& bodyB = *t[1];
 		if (Collisions::Collide(bodyA, bodyB, normal, depth)) {
-			
 			SeperateBodies(bodyA, bodyB, normal * depth);
 			EpsilonVector contact1(0, 0);
 			EpsilonVector contact2(0, 0);
@@ -152,16 +192,16 @@ void EpsilonWorld::NarrowPhase() {
 			CollisionManifold contact(bodyA, bodyB, contact1, contact2, normal, depth, contactCount);
 			ResolveCollisonWithRotationAndFriction(contact);
 		}
-
-
-		
 	}
 }
 
-void EpsilonWorld::UpdateMovement(float dt, int iterations) {
-	for (int i = 0; i < bodyList.size(); i++) {
-		bodyList[i].updateMovement(dt, gravity, iterations);
+
+
+void EpsilonWorld::UpdateMovement(float dt,int iterations) {
+	for (int i = 0; i < dynamicBodyList.size(); i++) {
+		dynamicBodyList[i]->updateMovement(dt, gravity, iterations);
 	}
+	
 }
 
 void EpsilonWorld::ResolveCollisonBasic(CollisionManifold& manifold)
@@ -406,9 +446,6 @@ void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitu
 }
 void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition,float width, float depth, float density) {
 	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].isStatic == true) {
-			continue;
-		}
 		if (bodyList[i].shapetype == box) {
 			if (bodyList[i].position.y + bodyList[i].height / 2.f > surfacePosition.y && bodyList[i].position.x < surfacePosition.x+(width/2.f) && bodyList[i].position.x > surfacePosition.x - (width / 2.f) && bodyList[i].position.y < surfacePosition.y + depth) {
 				EpsilonVector dir(0, 1.f);
@@ -464,14 +501,11 @@ void EpsilonWorld::CreateWater(EpsilonVector surfacePosition, float width, float
 void EpsilonWorld::AirResistance(float dt)
 {
 	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].isStatic == true) {
-			continue;
-		}
 		EpsilonVector resistance(bodyList[i].linearVelocity.x * bodyList[i].linearVelocity.x, bodyList[i].linearVelocity.y * bodyList[i].linearVelocity.y);
 		resistance = -resistance * airResistanceConstant;
 		float angularResistance = -abs(bodyList[i].angularVelocity) * bodyList[i].angularVelocity * rotationalAirResistanceConstant;
 		if (angularResistance != 0) {
-			bodyList[i].angularVelocity += (angularResistance /bodyList[i].inertia)*dt;
+			bodyList[i].angularVelocity += (angularResistance *bodyList[i].inverseInertia) * dt;
 		}
 		
 		bodyList[i].AddForce(resistance);

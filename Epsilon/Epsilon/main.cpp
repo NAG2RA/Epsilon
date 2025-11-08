@@ -27,11 +27,11 @@ int main() {
     Clock dt;
     RenderWindow window(VideoMode({ 1280,720 }), "Epsilon");
     View v = window.getDefaultView();
-    v.zoom(.5f);
+    v.zoom(.2f);
     window.setView(v);
     ContextSettings settings;
     settings.antiAliasingLevel = 0;
-    window.setFramerateLimit(320);   
+    window.setFramerateLimit(144);   
    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 300, 3, true, none));
    RectangleShape r({ 300,3 });
     r.setPosition(EpToVec2(world.GetBody(0).position));
@@ -168,7 +168,7 @@ int main() {
             if (timer <= 0) {
                 Vector2i postemp = Mouse::getPosition(window);
                 Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, none));
+                world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 0.5f, 1, false, none));
                 timer = 0.02f;
             }
         }
@@ -179,7 +179,10 @@ int main() {
             ispressed = false;
         }
         r.setPosition(EpToVec2(world.GetBody(0).position));
-        world.Update(deltatime, 16);
+            world.Update(deltatime, 16);
+            
+            
+        
         window.clear(Color::Black);
         for (int i = 0; i < world.GetBodyCount(); i++) {
            

@@ -200,7 +200,7 @@ EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float densit
 	return bd;
 }
 void EpsilonBody::CreateConnection(EpsilonVector origin) {
-	if (connectiontype == none) {
+	if (connectiontype == none||isStatic) {
 		return;
 	}
 	originPosition = origin;
@@ -208,12 +208,9 @@ void EpsilonBody::CreateConnection(EpsilonVector origin) {
 }
 void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations)
 {
-	if (isStatic) {
-		return;
-	}
-	dt = dt / (float)iterations;
+	dt /= iterations;
 	EpsilonVector acceleration = force * inverseMass;
-	acceleration += gravity;
+	acceleration += gravity*!isStatic;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
 	linearVelocity += acceleration*dt;

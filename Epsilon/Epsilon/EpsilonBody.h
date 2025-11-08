@@ -34,7 +34,7 @@ public:
 	static EpsilonBody CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, Connectiontype connectiontype);
 	static EpsilonBody CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, Connectiontype connectiontype);
 	void CreateConnection(EpsilonVector origin);
-	void updateMovement(float dt, EpsilonVector gravity, int iterations);
+	void updateMovement(float dt, EpsilonVector gravity,int iterations);
 	void Move(EpsilonVector amount);
 	vector<EpsilonVector> GetTransformedVertices();
 	void MoveTo(EpsilonVector& pos);

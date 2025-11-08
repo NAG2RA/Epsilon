@@ -8,30 +8,35 @@ class EpsilonWorld
 {
 public:
 	EpsilonWorld();
+	int GetBodyCount();
 	void AddBody(EpsilonBody body);
 	void RemoveBody(int index);
-	EpsilonBody GetBody(float index);
-	int GetBodyCount();
 	void Explosion(EpsilonVector position, float radius, float magnitude);
 	void CreateWater(EpsilonVector surfacePosition, float width, float depth, float density);
 	void Update(float dt, int iterations);
+	EpsilonBody GetBody(float index);
 private:
-	EpsilonVector gravity;
-	vector<vector<vector<EpsilonBody*>>> grid;
 	float airResistanceConstant;
 	float rotationalAirResistanceConstant;
 	float springConstant, damperConstant, damperThreadConstant;
-	float gridCellSizeX;
-	float gridCellSizeY;
 	float waterDensity, waterWidth, waterDepth;
+	float depth;
+	EpsilonVector gravity;
 	EpsilonVector waterSurfacePosition;
 	EpsilonVector normal;
-	float depth;
 	vector<EpsilonBody> bodyList;
-	vector<vector<int>> contactPairs;
+	vector<EpsilonBody*> staticBodyList;
+	vector<EpsilonBody*> dynamicBodyList;
+	vector<vector<EpsilonBody*>> contactPairs;
+	vector<EpsilonBody*> potentialColliders;
+	vector<EpsilonBody*> highPriorityObjects;
+	vector<EpsilonBody*> lowPriorityObjects;
+	vector<vector<EpsilonBody*>> highPriorityPairs;
+	vector<vector<EpsilonBody*>> lowPriorityPairs;
+	void PreFiltering();
 	void UpdateMovement(float dt, int iterations);
 	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv);
-	void BroadPhase(float windowWidth = 1280, float windowHeight = 720, int cellcount = 64, float zoom = 1);
+	void BroadPhase(int windowWidth = 1280, int windowHeight = 720, float zoom = 1.f);
 	void NarrowPhase();
 	void ResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveCollisonWithRotation(CollisionManifold& manifold);
