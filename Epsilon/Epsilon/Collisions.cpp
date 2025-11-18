@@ -307,6 +307,13 @@ bool Collisions::IntersectAABB(AABB a, AABB b)
     }
     return true;
 }
+bool Collisions::ContainsAABB(AABB a, AABB b)
+{
+    if (a.min.x<=b.min.x && a.max.x>=b.max.x && a.min.y<=b.min.y && a.max.y>=b.max.y || b.min.x<=a.min.x && b.max.x>=a.max.x && b.min.y<=a.min.y && b.max.y>=a.max.y) {
+        return true;
+    }
+    return false;
+}
 void Collisions::PointSegmentDistance(EpsilonVector p, EpsilonVector a, EpsilonVector b, float& distanceSquared, EpsilonVector& cp)
 {
     EpsilonVector ab = b - a;

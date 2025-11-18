@@ -17,6 +17,7 @@ public:
 	static int FindClosestPointOnPolygon(EpsilonVector Center, vector<EpsilonVector> vertices);
 	static bool Collide(EpsilonBody bodyA, EpsilonBody bodyB, EpsilonVector& normal, float& depth);
 	static bool IntersectAABB(AABB a, AABB b);
+	static bool ContainsAABB(AABB a, AABB b);
 	static void PointSegmentDistance(EpsilonVector p, EpsilonVector a, EpsilonVector b, float& distanceSquared, EpsilonVector& cp);
 	static void FindContactPoints(EpsilonBody bodyA, EpsilonBody bodyB, EpsilonVector& contact1, EpsilonVector& contact2, int& contactCount);
 	static void FindPolygonsContactPoints(vector<EpsilonVector> VerticesA, vector<EpsilonVector> VerticesB, EpsilonVector& contact1, EpsilonVector& contact2, int& contactCount);

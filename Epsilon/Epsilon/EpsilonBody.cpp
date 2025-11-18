@@ -210,7 +210,7 @@ void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations
 {
 	dt /= iterations;
 	EpsilonVector acceleration = force * inverseMass;
-	acceleration += gravity*!isStatic;
+	acceleration += gravity;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
 	linearVelocity += acceleration*dt;

@@ -6,7 +6,7 @@ public:
 	vector<EpsilonBody*> bodies;
 	std::unique_ptr<QuadTree> nw, ne, sw, se;
 
-	QuadTree(AABB ab, int capacity = 5)
+	QuadTree(AABB ab, int capacity)
 		:
 		aabb(ab.min.x, ab.max.x, ab.min.y, ab.max.y),
 		nodeCapacity(capacity)
@@ -24,11 +24,9 @@ public:
 			sw->query(area, found);
 			se->query(area, found);
 		}
-		else {
-			for (int i = 0; i < bodies.size(); i++) {
-				if (Collisions::IntersectAABB(area, bodies[i]->GetAABB())) {
-					found.push_back(bodies[i]);
-				}
+		for (int i = 0; i < bodies.size(); i++) {
+			if (Collisions::IntersectAABB(area, bodies[i]->GetAABB())) {
+				found.push_back(bodies[i]);
 			}
 		}
 	}
@@ -43,16 +41,15 @@ public:
 				bodies.push_back(body);
 				return true;
 			}
-
 			subdivide();
 		}
 
-		bool inserted_nw = nw->insert(body);
-		bool inserted_ne = ne->insert(body);
-		bool inserted_sw = sw->insert(body);
-		bool inserted_se = se->insert(body);
-
-		return inserted_nw || inserted_ne || inserted_sw || inserted_se;
+		if (Collisions::ContainsAABB(body->GetAABB(), nw->aabb)) return nw->insert(body);
+		if (Collisions::ContainsAABB(body->GetAABB(), ne->aabb)) return ne->insert(body);
+		if (Collisions::ContainsAABB(body->GetAABB(), sw->aabb)) return sw->insert(body);
+		if (Collisions::ContainsAABB(body->GetAABB(), se->aabb)) return se->insert(body);
+		bodies.push_back(body);
+		return true;
 	}
 
 private:
@@ -67,29 +64,24 @@ private:
 		se = make_unique<QuadTree>(AABB(midX, aabb.max.x, midY, aabb.max.y), nodeCapacity);
 
 		divided = true;
-
-		for (EpsilonBody* bd : bodies) {
-			nw->insert(bd);
-			ne->insert(bd);
-			sw->insert(bd);
-			se->insert(bd);
-		}
+		vector<EpsilonBody*> parentBodies = move(bodies);
 		bodies.clear();
+
+		for (EpsilonBody* bd : parentBodies) {
+			insert(bd);
+		}
 	}
 };
 EpsilonWorld::EpsilonWorld()
 	:depth(0),
 	normal(0,0),
 	gravity(0,9.81f),
-	springConstant(50),
-	damperConstant(5),
+	springConstant(20),
+	damperConstant(1),
 	damperThreadConstant(25),
+	damperWaterConstant(5),
 	airResistanceConstant(0.01f),
-	rotationalAirResistanceConstant(0.01f),
-	waterDensity(0),
-	waterDepth(0),
-	waterWidth(0),
-	waterSurfacePosition(0,0)
+	rotationalAirResistanceConstant(0.01f)
 {
 }
 
@@ -103,9 +95,19 @@ void EpsilonWorld::RemoveBody(int index)
 	bodyList.erase(bodyList.begin() + index);
 }
 
+int EpsilonWorld::GetDynamicBodyCount()
+{
+	return dynamicBodyList.size();
+}
+
 EpsilonBody EpsilonWorld::GetBody(float index)
 {
 	return bodyList[index];
+}
+
+EpsilonBody* EpsilonWorld::GetDynamicBody(float index)
+{
+	return dynamicBodyList[index];
 }
 
 int EpsilonWorld::GetBodyCount()
@@ -121,19 +123,27 @@ void EpsilonWorld::Update(float dt, int iterations)
 	else if (iterations > 32) {
 		iterations = 32;
 	}
+	dynamicBodyList.clear();
+	highPriorityObjects.clear();
+	lowPriorityObjects.clear();
 	PreFiltering();
+	UpdateMovement(dt, 1);
+	ResolveThreadConnection();
+	ResolveSpringConnection(dt, 1);
 	for (int it = 0; it < iterations / 2; it++) {
-		UpdateMovement(dt, iterations/2);
+		ResolveHighPrioritySpringConnection(dt,iterations/2.f);
+		UpdateHighPriorityMovement(dt, iterations / 2.f);
+		ResolveHighPriorityThreadConnection();
+		
 	}
 	for (int it = 0; it < iterations; it++) {
 		contactPairs.clear();
 		BroadPhase(1280, 720, 0.2f);
 		NarrowPhase();
 	}
-	ResolveThreadConnection();
-	ResolveSpringConnection(dt);
-	AirResistance(dt);
-	Buoyancy(waterSurfacePosition, waterWidth, waterDepth, waterDensity);
+	
+	AirResistance(dt,1);
+	Buoyancy();
 }
 
 
@@ -144,10 +154,16 @@ void EpsilonWorld::SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, Epsilo
 
 void EpsilonWorld::PreFiltering()
 {
-	dynamicBodyList.clear();
+	
 	for (int i = 0; i < bodyList.size(); i++) {
 		if(!bodyList[i].isStatic) {
 			dynamicBodyList.push_back(&bodyList[i]);
+			if (bodyList[i].linearVelocity.LengthSquared() > 100.f) {
+				highPriorityObjects.push_back(&bodyList[i]);
+			}
+			else {
+				lowPriorityObjects.push_back(&bodyList[i]);
+			}
 		}
 	}
 }
@@ -158,13 +174,13 @@ void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
 		}
 		float offsetX((windowWidth - windowWidth * zoom) / 2.f);
 		float offsetY((windowHeight - windowHeight * zoom) / 2.f);
-		unique_ptr<QuadTree> qtree = make_unique<QuadTree>(AABB(offsetX, windowWidth * zoom + offsetX, offsetY, windowHeight * zoom + offsetY), 30);
+		QuadTree qtree(AABB(offsetX, windowWidth * zoom + offsetX, offsetY, windowHeight * zoom + offsetY), 50);
 		for (int i = 0; i < bodyList.size(); i++) {
-			qtree->insert(&bodyList[i]);
+			qtree.insert(&bodyList[i]);
 		}
 		for (int i = 0; i < dynamicBodyList.size(); i++) {
 			potentialColliders.clear();
-			qtree->query(dynamicBodyList[i]->GetAABB(), potentialColliders);
+			qtree.query(dynamicBodyList[i]->GetAABB(), potentialColliders);
 			for (int j = 0; j < potentialColliders.size(); j++) {
 				if (dynamicBodyList[i] == potentialColliders[j]) {
 					continue;
@@ -195,13 +211,18 @@ void EpsilonWorld::NarrowPhase() {
 	}
 }
 
-
-
 void EpsilonWorld::UpdateMovement(float dt,int iterations) {
-	for (int i = 0; i < dynamicBodyList.size(); i++) {
-		dynamicBodyList[i]->updateMovement(dt, gravity, iterations);
+	for (int i = 0; i < lowPriorityObjects.size(); i++) {
+		lowPriorityObjects[i]->updateMovement(dt, gravity, iterations);
 	}
 	
+}
+
+void EpsilonWorld::UpdateHighPriorityMovement(float dt, int iterations)
+{
+	for (int i = 0; i < highPriorityObjects.size(); i++) {
+		highPriorityObjects[i]->updateMovement(dt, gravity, iterations);
+	}
 }
 
 void EpsilonWorld::ResolveCollisonBasic(CollisionManifold& manifold)
@@ -393,98 +414,139 @@ void EpsilonWorld::ZoZoResolveCollisonBasic(CollisionManifold& manifold)
 	
 }
 void EpsilonWorld::ResolveThreadConnection() {
-	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].connectiontype == none|| bodyList[i].connectiontype == spring) {
+	for (int i = 0; i < lowPriorityObjects.size(); i++) {
+		if (lowPriorityObjects[i]->connectiontype == none|| lowPriorityObjects[i]->connectiontype == spring) {
 			continue;
 		}
-		else if (bodyList[i].originPosition.Distance(bodyList[i].connectionPosition) > bodyList[i].connectionDistance) {
-			EpsilonVector dir = bodyList[i].connectionPosition - bodyList[i].originPosition;
+		else if (lowPriorityObjects[i]->originPosition.Distance(lowPriorityObjects[i]->connectionPosition) > lowPriorityObjects[i]->connectionDistance) {
+			EpsilonVector dir = lowPriorityObjects[i]->connectionPosition - lowPriorityObjects[i]->originPosition;
 			float dist = dir.Length();
-			float restDist = dist - bodyList[i].connectionDistance;
-			float damperForce = -(damperThreadConstant * bodyList[i].linearVelocity.Dot(dir)) / dist;
-			bodyList[i].linearVelocity += -dir * (bodyList[i].inverseMass*restDist);
-			bodyList[i].AddForce(damperForce * dir);
-			EpsilonVector offset = bodyList[i].connectionPosition - bodyList[i].position;
-			bodyList[i].angularVelocity += offset.Cross(-dir * (bodyList[i].inverseMass * restDist));
+			float restDist = dist - lowPriorityObjects[i]->connectionDistance;
+			float damperForce = -(damperThreadConstant * lowPriorityObjects[i]->linearVelocity.Dot(dir)) / dist;
+			lowPriorityObjects[i]->linearVelocity += -dir * (lowPriorityObjects[i]->inverseMass*restDist);
+			lowPriorityObjects[i]->AddForce(damperForce * dir);
+			EpsilonVector offset = lowPriorityObjects[i]->connectionPosition - lowPriorityObjects[i]->position;
+			lowPriorityObjects[i]->angularVelocity += offset.Cross(-dir * (lowPriorityObjects[i]->inverseMass * restDist));
 		}
 	}
 }
-void EpsilonWorld::ResolveSpringConnection(float dt) {
-	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].connectiontype == none || bodyList[i].connectiontype == thr) {
+void EpsilonWorld::ResolveSpringConnection(float dt, int iterations) {
+	dt = dt/iterations;
+	for (int i = 0; i < lowPriorityObjects.size(); i++) {
+		if (lowPriorityObjects[i]->connectiontype == none || lowPriorityObjects[i]->connectiontype == thr) {
 			continue;
 		}
 		
-		EpsilonVector dir = bodyList[i].connectionPosition - bodyList[i].originPosition;
+		EpsilonVector dir = lowPriorityObjects[i]->connectionPosition - lowPriorityObjects[i]->originPosition;
 		float dist = dir.Length();
-		float restDist = dist - bodyList[i].connectionDistance;
-		float springForce = -restDist * springConstant;
-		float damperForce = -(damperConstant * bodyList[i].linearVelocity.Dot(dir))/dist;
-		EpsilonVector force = (springForce+damperForce)*dir/dist;
-		bodyList[i].AddForce(force);
-		EpsilonVector offset = bodyList[i].connectionPosition - bodyList[i].position;
-		springForce = -abs(restDist) * springConstant;
-		force = (springForce + damperForce) * dir / dist;
-		float angularResistance = offset.Cross(force);
-		bodyList[i].angularVelocity += (angularResistance * bodyList[i].inverseInertia*damperConstant/springConstant) * dt;
+		float restDist = dist - lowPriorityObjects[i]->connectionDistance;
+		float springForce = restDist * springConstant;
+		
+		float damperForce = (damperConstant * (lowPriorityObjects[i]->linearVelocity.Dot(dir))/dist);
+		EpsilonVector force = -(springForce+damperForce)*dir/dist;
+		EpsilonVector offset = lowPriorityObjects[i]->connectionPosition - lowPriorityObjects[i]->position;
+		float angularResistance = offset.Cross(force*lowPriorityObjects[i]->inverseInertia);
+		lowPriorityObjects[i]->angularVelocity += angularResistance* lowPriorityObjects[i]->inverseMass* dt;
+		lowPriorityObjects[i]->AddForce(force);
+	}
+}
+void EpsilonWorld::ResolveHighPriorityThreadConnection()
+{
+	for (int i = 0; i < highPriorityObjects.size(); i++) {
+		if (highPriorityObjects[i]->connectiontype == none || highPriorityObjects[i]->connectiontype == spring) {
+			continue;
+		}
+		else if (highPriorityObjects[i]->originPosition.Distance(highPriorityObjects[i]->connectionPosition) > highPriorityObjects[i]->connectionDistance) {
+			EpsilonVector dir = highPriorityObjects[i]->connectionPosition - highPriorityObjects[i]->originPosition;
+			float dist = dir.Length();
+			float restDist = dist - highPriorityObjects[i]->connectionDistance;
+			float damperForce = -(damperThreadConstant * highPriorityObjects[i]->linearVelocity.Dot(dir)) / dist;
+			highPriorityObjects[i]->linearVelocity += -dir * (highPriorityObjects[i]->inverseMass * restDist);
+			highPriorityObjects[i]->AddForce(damperForce * dir);
+			EpsilonVector offset = highPriorityObjects[i]->connectionPosition - highPriorityObjects[i]->position;
+			highPriorityObjects[i]->angularVelocity += offset.Cross(-dir * (highPriorityObjects[i]->inverseMass * restDist));
+		}
+	}
+}
+void EpsilonWorld::ResolveHighPrioritySpringConnection(float dt, int iterations)
+{
+	dt = dt / iterations;
+	for (int i = 0; i < highPriorityObjects.size(); i++) {
+		if (highPriorityObjects[i]->connectiontype == none || highPriorityObjects[i]->connectiontype == thr) {
+			continue;
+		}
+
+		EpsilonVector dir = highPriorityObjects[i]->connectionPosition - highPriorityObjects[i]->originPosition;
+		float dist = dir.Length();
+		float restDist = dist - highPriorityObjects[i]->connectionDistance;
+		float springForce = restDist * springConstant;
+		float damperForce = (damperConstant * (highPriorityObjects[i]->linearVelocity.Dot(dir)) / dist);
+		EpsilonVector force = -(springForce + damperForce) * dir / dist;
+		EpsilonVector offset = highPriorityObjects[i]->connectionPosition - highPriorityObjects[i]->position;
+		float angularResistance = offset.Cross(force * highPriorityObjects[i]->inverseInertia);
+		highPriorityObjects[i]->angularVelocity += angularResistance* highPriorityObjects[i]->inverseMass* dt;
+		highPriorityObjects[i]->AddForce(force);
 	}
 }
 void EpsilonWorld::Explosion(EpsilonVector position, float radius, float magnitude)
 {
-	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].position.Distance(position) > radius) {
+	for (int i = 0; i < dynamicBodyList.size(); i++) {
+		if (dynamicBodyList[i]->position.Distance(position) > radius) {
 			continue;
 		}
-		EpsilonVector dir = bodyList[i].position - position;
+		EpsilonVector dir = dynamicBodyList[i]->position - position;
 		float dist = dir.Length();
 		EpsilonVector impulse = (dir * magnitude) / (dist*dist);
 		EpsilonVector vertical(0, 1.f);
 		float mag = -vertical.Cross(impulse);
-		bodyList[i].linearVelocity += impulse * bodyList[i].inverseMass;
-		bodyList[i].angularVelocity += mag * bodyList[i].inverseInertia;
+		dynamicBodyList[i]->linearVelocity += impulse * dynamicBodyList[i]->inverseMass;
+		dynamicBodyList[i]->angularVelocity += mag * dynamicBodyList[i]->inverseInertia;
 	}
 }
-void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition,float width, float depth, float density) {
-	for (size_t i = 0; i < bodyList.size(); i++) {
-		if (bodyList[i].shapetype == box) {
-			if (bodyList[i].position.y + bodyList[i].height / 2.f > surfacePosition.y && bodyList[i].position.x < surfacePosition.x+(width/2.f) && bodyList[i].position.x > surfacePosition.x - (width / 2.f) && bodyList[i].position.y < surfacePosition.y + depth) {
-				EpsilonVector dir(0, 1.f);
-				float h = bodyList[i].position.y + (bodyList[i].height/2.f) - surfacePosition.y;
-				if (h > bodyList[i].height) {
-					h = bodyList[i].height;
+void EpsilonWorld::Buoyancy() {
+	for (int j = 0; j < waterList.size(); j++) {
+		for (int i = 0; i < dynamicBodyList.size(); i++) {
+			Water& w = waterList[j];
+			if (dynamicBodyList[i]->shapetype == box) {
+				if (dynamicBodyList[i]->position.y + dynamicBodyList[i]->height / 2.f > w.surfacePosition.y && dynamicBodyList[i]->position.x < w.surfacePosition.x + (w.width / 2.f) && dynamicBodyList[i]->position.x > w.surfacePosition.x - (w.width / 2.f) && dynamicBodyList[i]->position.y < w.surfacePosition.y + w.depth) {
+					EpsilonVector dir(0, 1.f);
+					float h = dynamicBodyList[i]->position.y + (dynamicBodyList[i]->height / 2.f) - w.surfacePosition.y;
+					if (h > dynamicBodyList[i]->height) {
+						h = dynamicBodyList[i]->height;
+					}
+					float damperForce = (damperWaterConstant * dynamicBodyList[i]->linearVelocity.Dot(dir)) * h;
+					EpsilonVector force = -dir * ((dynamicBodyList[i]->width * h * 9.81f * w.density) + damperForce);
+					dynamicBodyList[i]->AddForce(force);
 				}
-				float damperForce = (damperConstant*bodyList[i].linearVelocity.Dot(dir))*h;
-				EpsilonVector force = -dir * ((bodyList[i].width * h * 9.81f * density)+damperForce);
-				bodyList[i].AddForce(force);
 			}
-		}
-		else if(bodyList[i].shapetype == circle){
-			if (bodyList[i].position.y + bodyList[i].radius > surfacePosition.y && bodyList[i].position.x < surfacePosition.x + width / 2.f && bodyList[i].position.x > surfacePosition.x - width / 2.f && bodyList[i].position.y < surfacePosition.y + depth) {
-				EpsilonVector dir(0, 1.f);
-				float h = bodyList[i].position.y + bodyList[i].radius - surfacePosition.y;
-				if (h > bodyList[i].radius*2.f) {
-					h = bodyList[i].radius*2.f;
+			else if (dynamicBodyList[i]->shapetype == circle) {
+				if (dynamicBodyList[i]->position.y + dynamicBodyList[i]->radius > w.surfacePosition.y && dynamicBodyList[i]->position.x < w.surfacePosition.x + w.width / 2.f && dynamicBodyList[i]->position.x > w.surfacePosition.x - w.width / 2.f && dynamicBodyList[i]->position.y < w.surfacePosition.y + w.depth) {
+					EpsilonVector dir(0, 1.f);
+					float h = dynamicBodyList[i]->position.y + dynamicBodyList[i]->radius - w.surfacePosition.y;
+					if (h > dynamicBodyList[i]->radius * 2.f) {
+						h = dynamicBodyList[i]->radius * 2.f;
+					}
+					float r = dynamicBodyList[i]->radius;
+					float area = r * r * acos(1 - (h / r)) - (r - h) * sqrt(r * r - (r - h) * (r - h));
+					float damperForce = (damperWaterConstant * dynamicBodyList[i]->linearVelocity.Dot(dir)) * h;
+					EpsilonVector force = -dir * ((area * 9.81f * w.density) + damperForce);
+					dynamicBodyList[i]->AddForce(force);
 				}
-				float r = bodyList[i].radius;
-				float area = r * r * acos(1 - (h / r)) - (r - h) * sqrt(r * r - (r - h) * (r - h));
-				float damperForce = (damperConstant * bodyList[i].linearVelocity.Dot(dir)) * h;
-				EpsilonVector force = -dir * ((area * 9.81f * density) + damperForce);
-				bodyList[i].AddForce(force);
 			}
-		}
-		else if (bodyList[i].shapetype == triangle) {
-			if (bodyList[i].position.y + bodyList[i].height / 3.f > surfacePosition.y && bodyList[i].position.x < surfacePosition.x + width / 2.f && bodyList[i].position.x > surfacePosition.x - width / 2.f && bodyList[i].position.y < surfacePosition.y + depth) {
-				EpsilonVector dir(0, 1.f);
-				float h = bodyList[i].position.y + bodyList[i].height / 3.f - surfacePosition.y;
-				if (h > bodyList[i].height) {
-					h = bodyList[i].height;
+			else if (dynamicBodyList[i]->shapetype == triangle) {
+				if (dynamicBodyList[i]->position.y + dynamicBodyList[i]->height / 3.f > w.surfacePosition.y && dynamicBodyList[i]->position.x < w.surfacePosition.x + w.width / 2.f && dynamicBodyList[i]->position.x > w.surfacePosition.x - w.width / 2.f && dynamicBodyList[i]->position.y < w.surfacePosition.y + w.depth) {
+					EpsilonVector dir(0, 1.f);
+					float h = dynamicBodyList[i]->position.y + dynamicBodyList[i]->height / 3.f - w.surfacePosition.y;
+					if (h > dynamicBodyList[i]->height) {
+						h = dynamicBodyList[i]->height;
+					}
+					float hTriangle = dynamicBodyList[i]->height - h;
+					float sideTriangle = (hTriangle * dynamicBodyList[i]->width) / dynamicBodyList[i]->height;
+					float area = (sideTriangle + dynamicBodyList[i]->width) * h / 2;
+					float damperForce = (damperWaterConstant * dynamicBodyList[i]->linearVelocity.Dot(dir)) * h;
+					EpsilonVector force = -dir * ((area * 9.81f * w.density) + damperForce);
+					dynamicBodyList[i]->AddForce(force);
 				}
-				float hTriangle = bodyList[i].height - h;
-				float sideTriangle = (hTriangle * bodyList[i].width) / bodyList[i].height;
-				float area = (sideTriangle + bodyList[i].width) * h / 2;
-				float damperForce = (damperConstant * bodyList[i].linearVelocity.Dot(dir)) * h;
-				EpsilonVector force = -dir * ((area * 9.81f * density) + damperForce);
-				bodyList[i].AddForce(force);
 			}
 		}
 	}
@@ -492,22 +554,25 @@ void EpsilonWorld::Buoyancy(EpsilonVector surfacePosition,float width, float dep
 
 void EpsilonWorld::CreateWater(EpsilonVector surfacePosition, float width, float depth, float density)
 {
-	waterSurfacePosition = surfacePosition;
-	waterDensity = density;
-	waterWidth = width;
-	waterDepth = depth;
+	waterList.push_back(Water(surfacePosition, density, width, depth));
 }
 
-void EpsilonWorld::AirResistance(float dt)
+void EpsilonWorld::DeleteWater(int index)
 {
-	for (size_t i = 0; i < bodyList.size(); i++) {
-		EpsilonVector resistance(bodyList[i].linearVelocity.x * bodyList[i].linearVelocity.x, bodyList[i].linearVelocity.y * bodyList[i].linearVelocity.y);
+	waterList.erase(waterList.begin() + index);
+}
+
+void EpsilonWorld::AirResistance(float dt, int iterations)
+{
+	dt/=iterations;
+	for (int i = 0; i < dynamicBodyList.size(); i++) {
+		EpsilonVector resistance(dynamicBodyList[i]->linearVelocity.x * dynamicBodyList[i]->linearVelocity.x, dynamicBodyList[i]->linearVelocity.y * dynamicBodyList[i]->linearVelocity.y);
 		resistance = -resistance * airResistanceConstant;
-		float angularResistance = -abs(bodyList[i].angularVelocity) * bodyList[i].angularVelocity * rotationalAirResistanceConstant;
+		float angularResistance = -abs(dynamicBodyList[i]->angularVelocity) * dynamicBodyList[i]->angularVelocity * rotationalAirResistanceConstant;
 		if (angularResistance != 0) {
-			bodyList[i].angularVelocity += (angularResistance *bodyList[i].inverseInertia) * dt;
+			dynamicBodyList[i]->angularVelocity += (angularResistance *dynamicBodyList[i]->inverseInertia) * dt;
 		}
 		
-		bodyList[i].AddForce(resistance);
+		dynamicBodyList[i]->AddForce(resistance);
 	}
 }
