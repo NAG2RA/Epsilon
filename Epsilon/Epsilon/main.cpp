@@ -1,6 +1,9 @@
-#include<SFML/Graphics.hpp>
-#include<SFML/Window.hpp>
-#include<SFML/System.hpp>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include<fstream>
+#include<string>
+#include<sstream>
+#include<streambuf>
 #include<iostream>
 #include<vector>
 #include<cmath>
@@ -10,38 +13,76 @@
 #include"EpsilonWorld.h"
 #include"AABB.h"
 #include"EpsilonVector.h"
-using namespace sf;
 using namespace std;
 
-Vector2f EpToVec2(EpsilonVector c) {
-    return Vector2f(c.x, c.y);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
 }
-EpsilonVector Vec2ToEp(Vector2f c) {
-    return EpsilonVector(c.x, c.y);
+
+string loadShaderSrc(const char* filename) {
+    ifstream file;
+    stringstream buf;
+    string ret = "";
+    file.open(filename);
+
+    if (file.is_open()) {
+        buf << file.rdbuf();
+        ret = buf.str();
+    }
+    else {
+        cout << "Could not open " << filename << endl;
+    }
+
+    file.close();
+
+    return ret;
 }
-void Inputs(EpsilonWorld& world, RenderWindow& window, float deltatime,bool& ispressed,int& contype,float& timer, EpsilonVector& origin) {
 
-    
+void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& ispressed, int& contype, float& timer, EpsilonVector& origin, int width, int height) {
 
-    if (Mouse::isButtonPressed(Mouse::Button::Left)) {
+
+
+    if (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         if (!ispressed) {
             if (contype == 0) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, none));
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+
+                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX,spawnY), 0.7f, 0.5f, 2, 2, false, none));
             }
             else if (contype == 1) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, spring);
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false, spring);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
             }
             else if (contype == 2) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                EpsilonBody body = EpsilonBody::CreateBoxBody(Vec2ToEp(pos), 0.7f, 0.5f, 2, 2, false, thr);
+                
+              double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false, thr);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -50,26 +91,44 @@ void Inputs(EpsilonWorld& world, RenderWindow& window, float deltatime,bool& isp
 
         ispressed = true;
     }
-    else if (Mouse::isButtonPressed(Mouse::Button::Right)) {
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 
         if (!ispressed) {
             if (contype == 0) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, none));
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, none));
             }
             else if (contype == 1) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, spring);
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, spring);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
             }
             else if (contype == 2) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                EpsilonBody body = EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 1, 1, false, thr);
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, thr);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -77,26 +136,44 @@ void Inputs(EpsilonWorld& world, RenderWindow& window, float deltatime,bool& isp
         }
         ispressed = true;
     }
-    else if (Mouse::isButtonPressed(Mouse::Button::Middle)) {
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS) {
 
         if (!ispressed) {
             if (contype == 0) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                world.AddBody(EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1.5f, 0.5f, 2, false, none));
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                world.AddBody(EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX,spawnY), 1.5f, 0.5f, 2, false, none));
             }
             else if (contype == 1) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                EpsilonBody body = EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, spring);
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, spring);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
             }
             else if (contype == 2) {
-                Vector2i postemp = Mouse::getPosition(window);
-                Vector2f pos = window.mapPixelToCoords(postemp);
-                EpsilonBody body = EpsilonBody::CreateTriangleBody(Vec2ToEp(pos), 1, 0.5f, 2, false, thr);
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+                float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+                float targetNDC_X = mouseNDC_X / 5;
+                float targetNDC_Y = mouseNDC_Y / 5;
+                float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+                float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+                EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, thr);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -104,37 +181,61 @@ void Inputs(EpsilonWorld& world, RenderWindow& window, float deltatime,bool& isp
         }
         ispressed = true;
     }
-    else if (Keyboard::isKeyPressed(Keyboard::Key::A)) {
+    else if (glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS) {
         if (!ispressed) {
-            Vector2i postemp = Mouse::getPosition(window);
-            Vector2f pos = window.mapPixelToCoords(postemp);
-            world.Explosion(Vec2ToEp(pos), 10, 100);
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+            float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+            float targetNDC_X = mouseNDC_X / 5;
+            float targetNDC_Y = mouseNDC_Y / 5;
+            float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+            float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+            world.Explosion(EpsilonVector(spawnX, spawnY), 10, 100);
         }
         ispressed = true;
 
     }
-    else if (Keyboard::isKeyPressed(Keyboard::Key::C) && Keyboard::isKeyPressed(Keyboard::Key::S)) {
+    else if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         contype = 1;
-        Vector2i postemp = Mouse::getPosition(window);
-        Vector2f pos = window.mapPixelToCoords(postemp);
-        origin = Vec2ToEp(pos);
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+        float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+        float targetNDC_X = mouseNDC_X / 5;
+        float targetNDC_Y = mouseNDC_Y / 5;
+        float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+        float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+        origin = EpsilonVector(spawnX, spawnY);
     }
-    else if (Keyboard::isKeyPressed(Keyboard::Key::C) && Keyboard::isKeyPressed(Keyboard::Key::T)) {
+    else if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
         contype = 2;
-        Vector2i postemp = Mouse::getPosition(window);
-        Vector2f pos = window.mapPixelToCoords(postemp);
-        origin = Vec2ToEp(pos);
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+        float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+        float targetNDC_X = mouseNDC_X / 5;
+        float targetNDC_Y = mouseNDC_Y / 5;
+        float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+        float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+        origin = EpsilonVector(spawnX, spawnY);
     }
-    else if (Keyboard::isKeyPressed(Keyboard::Key::H)) {
+    else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
         timer -= deltatime;
         if (timer <= 0) {
-            Vector2i postemp = Mouse::getPosition(window);
-            Vector2f pos = window.mapPixelToCoords(postemp);
-            world.AddBody(EpsilonBody::CreateCircleBody(Vec2ToEp(pos), 1.5f, 0.5f, 1, false, none));
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+            float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+            float targetNDC_X = mouseNDC_X / 5;
+            float targetNDC_Y = mouseNDC_Y / 5;
+            float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
+            float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
+            world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 1, false, none));
             timer = 0.02f;
         }
     }
-    else if (Keyboard::isKeyPressed(Keyboard::Key::Q)) {
+    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
         cout << world.GetBodyCount() << endl;
     }
     else {
@@ -142,72 +243,196 @@ void Inputs(EpsilonWorld& world, RenderWindow& window, float deltatime,bool& isp
     }
 }
 
+void Draw(EpsilonWorld& world, int width, int height) {
+    int success;
+    char infoLog[512];
+    unsigned int vertexShader;
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    string vertexShaderSrc = loadShaderSrc("vertex_core.glsl");
+    const GLchar* vert = vertexShaderSrc.c_str();
+    glShaderSource(vertexShader, 1, &vert, NULL);
+    glCompileShader(vertexShader);
+
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        cout << "Could not compile vertexShader " << "Log:" << endl << infoLog << endl;
+    }
+
+    unsigned int fragmentShader;
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    string fragmentShaderSrc = loadShaderSrc("fragment_core.glsl");
+    const GLchar* frag = fragmentShaderSrc.c_str();
+    glShaderSource(fragmentShader, 1, &frag, NULL);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        cout << "Could not compile fragmentShader " << "Log:" << endl << infoLog << endl;
+    }
 
 
-void DrawDynamicBodies(EpsilonWorld& world,RenderWindow& window) {
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        cout << "Could not link shaderProgram " << "Log:" << endl << infoLog << endl;
+    }
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    unsigned int VAO, VBO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+    vector<float> allVert;
+    vector<int> allIndic;
     for (int i = 0; i < world.GetBodyCount(); i++) {
 
-        if (world.GetBody(i).shapetype == box) {
-            RectangleShape rc({ 2,2 });
-            rc.setOrigin({ 1,1 });
-            rc.setPosition(EpToVec2(world.GetBody(i).position));
-            Angle angle = radians(world.GetBody(i).angle);
-            rc.setRotation(angle);
-            window.draw(rc);
-        }
-        else if (world.GetBody(i).shapetype == triangle) {
-            float rad = world.GetBody(i).width / sqrt(3);
-            CircleShape c(rad, 3);
-            c.setOrigin({ rad, world.GetBody(i).height * 2.f / 3.f });
-            c.setPosition(EpToVec2(world.GetBody(i).position));
-            Angle angle = radians(world.GetBody(i).angle);
-            c.setRotation(angle);
-            window.draw(c);
-        }
-        else {
-            CircleShape c(1);
-            c.setOrigin({ 1,1 });
-            c.setPosition(EpToVec2(world.GetBody(i).position));
-            Angle angle = radians(world.GetBody(i).angle);
-            c.setRotation(angle);
-            RectangleShape rc({ 1,0.1 });
-            rc.setPosition(EpToVec2(world.GetBody(i).position));
-            rc.setRotation(angle);
-            rc.setFillColor(Color::Red);
-            window.draw(c);
-            window.draw(rc);
-        }
-        if (world.GetBody(i).connectiontype == thr) {
-            VertexArray line(PrimitiveType::Lines, 2);
-            line[0].position = EpToVec2(world.GetBody(i).originPosition);
-            line[0].color = Color::Blue;
-            Vector2i postemp = Mouse::getPosition(window);
-            Vector2f pos = window.mapPixelToCoords(postemp);
-            line[1].position = EpToVec2(world.GetBody(i).connectionPosition);
-            line[1].color = Color::Blue;
-            window.draw(line);
-        }
-        else if (world.GetBody(i).connectiontype == spring) {
-            VertexArray line(PrimitiveType::Lines, 2);
-            line[0].position = EpToVec2(world.GetBody(i).originPosition);
-            line[0].color = Color::Green;
-            Vector2i postemp = Mouse::getPosition(window);
-            Vector2f pos = window.mapPixelToCoords(postemp);
-            line[1].position = EpToVec2(world.GetBody(i).connectionPosition);
-            line[1].color = Color::Green;
-            window.draw(line);
-        }
+        if (world.GetBody(i).shapetype == triangle) {
+            vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
+            vector<float> vertices = {
+                 5 * ((v[1].x / width) * 2 - 1), 5 * (1 - (v[1].y / height) * 2),0.0f,
+                 5 * ((v[0].x / width) * 2 - 1), 5 * (1 - (v[0].y / height) * 2),0.0f,
+                 5 * ((v[2].x / width) * 2 - 1), 5 * (1 - (v[2].y / height) * 2),0.0f
+            };
+            int offset = allVert.size() / 3;
+            vector<int> indices = {
+                offset + 0,offset + 1,offset + 2
+            };
+            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
 
 
-
-        AABB box = world.GetBody(i).GetAABB();
-        if (box.min.y > 400) {
-            world.RemoveBody(i);
         }
+        else if (world.GetBody(i).shapetype == box) {
+            vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
+            vector<float> vertices = {
+                 5 * ((v[3].x / width) * 2 - 1), 5 * (1 - (v[3].y / height) * 2),0.0f,
+                 5 * ((v[0].x / width) * 2 - 1), 5 * (1 - (v[0].y / height) * 2),0.0f,
+                 5 * ((v[1].x / width) * 2 - 1), 5 * (1 - (v[1].y / height) * 2),0.0f,
+                 5 * ((v[2].x / width) * 2 - 1), 5 * (1 - (v[2].y / height) * 2),0.0f
+            };
+            int offset = allVert.size() / 3;
+            vector<int> indices = {
+                offset + 0,offset + 1,offset + 2,
+                offset + 0,offset + 3,offset + 2
+            };
+            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
 
+        }
+        else if (world.GetBody(i).shapetype == circle) {
+            EpsilonBody body = world.GetBody(i);
+            float pi = 3.1415926;
+            vector<float> vertices;
+            vector<int> indices;
+            vertices.push_back(5 * ((body.position.x / width) * 2 - 1));
+            vertices.push_back(5 * (1 - (body.position.y / height) * 2));
+            vertices.push_back(0.0f);
+            int segments = 10;
+            float rad = body.radius;
+            EpsilonVector pos = body.position;
+            for (int i = 0; i <= segments; i++) {
+                float angle = 2.0f * pi * (float)i / (float)segments;
+
+                vertices.push_back(5 * (((pos.x + cos(angle) * rad) / width) * 2 - 1));
+                vertices.push_back(5 * (1 - ((pos.y + sin(angle) * rad) / height) * 2));
+                vertices.push_back(0.0f);
+            }
+            int offset = allVert.size() / 3;
+            for (int i = 0; i < segments; i++) {
+                indices.push_back(offset + 0);
+                indices.push_back(offset + i + 1);
+                indices.push_back(offset + i + 2);
+            }
+            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
+        }
+        if (world.GetBody(i).connectiontype == spring) {
+
+            float vertices[] = {
+                 5 * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
+                 5 * ((world.GetBody(i).originPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
+            };
+            int indices[] = {
+                 0,  1
+            };
+            glUseProgram(shaderProgram);
+            glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 0.0f, 1.0f, 0.0f, 1.0f);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
+            glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
+        }
+        else if (world.GetBody(i).connectiontype == thr) {
+            float vertices[] = {
+                 5 * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
+                 5 * ((world.GetBody(i).originPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
+            };
+            int indices[] = {
+                 0,  1
+            };
+            glUseProgram(shaderProgram);
+            glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 0.0f, 0.0f, 1.0f, 1.0f);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
+            glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
+        }
     }
-}
 
+    glUseProgram(shaderProgram);
+    glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 1.0f, 1.0f, 1.0f, 1.0f);
+    glBufferData(GL_ARRAY_BUFFER, allVert.size() * sizeof(float), allVert.data(), GL_DYNAMIC_DRAW);
+
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, allIndic.size() * sizeof(unsigned int), allIndic.data(), GL_DYNAMIC_DRAW);
+    glDrawElements(GL_TRIANGLES, allIndic.size(), GL_UNSIGNED_INT, 0);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    vector<float> waterVertices;
+    vector<int> waterIndices;
+    for (int i = 0; i < world.GetWaterCount(); i++) {
+
+        Water w = world.GetWater(i);
+        vector<float> vertices = {
+                5 * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f,
+                5 * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
+                5 * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
+                5 * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f
+        };
+        int offset = waterVertices.size() / 3;
+        vector<int> indices = {
+            offset + 0,offset + 1,offset + 2,
+            offset + 0,offset + 3,offset + 2
+        };
+        waterVertices.insert(waterVertices.end(), vertices.begin(), vertices.end());
+        waterIndices.insert(waterIndices.end(), indices.begin(), indices.end());
+    }
+    glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 0.06f, 0.44f, 0.99f, 0.4f);
+    glUseProgram(shaderProgram);
+    glBufferData(GL_ARRAY_BUFFER, waterVertices.size() * sizeof(float), waterVertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, waterIndices.size() * sizeof(unsigned int), waterIndices.data(), GL_DYNAMIC_DRAW);
+    glDrawElements(GL_TRIANGLES, waterIndices.size(), GL_UNSIGNED_INT, 0);
+
+    glDisable(GL_BLEND);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteProgram(shaderProgram);
+}
 
 
 int main() {  
@@ -216,52 +441,47 @@ int main() {
     int contype = 0;
     EpsilonWorld world;
     float timer = 0.02f;
-    Clock dt;
     EpsilonVector origin;
-    RenderWindow window(VideoMode({ 1280,720 }), "Epsilon");
-    View v = window.getDefaultView();
-    v.zoom(.2f);
-    window.setView(v);
-    ContextSettings settings;
-    settings.antiAliasingLevel = 0;
-    window.setFramerateLimit(320);   
-   world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 300, 3, true, none));
-   RectangleShape r({ 300,3 });
-    r.setPosition(EpToVec2(world.GetBody(0).position));
-    r.setOrigin({ 150,1.5 });
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 300, 3, true, none));
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(740, 370), 1.f, 0.5f, 3, 300, true, none));
-    RectangleShape r1({ 3,300 });
-    r1.setPosition(EpToVec2(world.GetBody(1).position));
-    r1.setOrigin({ 1.5,150 });
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(540, 370), 1.f, 0.5f, 3, 300, true, none));
-    RectangleShape r2({ 3,300 });
-    r2.setPosition(EpToVec2(world.GetBody(2).position));
-    r2.setOrigin({ 1.5,150 });
-    
-    RectangleShape water({ 30 , 3 });
-    water.setOrigin({ 15, 0 });
-    water.setPosition(Vector2f(640, 375));
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(540, 370), 1.f, 0.5f, 3, 300, true, none));   
     world.CreateWater(EpsilonVector(640, 375), 30, 3, 1);
-    water.setFillColor(Color(16, 112, 222, 100));
-    
-    while (window.isOpen()) {  
-        Time d = dt.restart();
-        float deltatime = d.asSeconds();
-        while (const optional event = window.pollEvent())
-        {
-            if (event->is<sf::Event::Closed>())
-                window.close();
-        }
-        Inputs(world, window, deltatime,ispressed,contype,timer,origin);
-        r.setPosition(EpToVec2(world.GetBody(0).position));
-        world.Update(deltatime, 16);
-        window.clear(Color::Black);
-        DrawDynamicBodies(world, window);
-        window.draw(water);
-        window.draw(r1);
-        window.draw(r2);
-        window.draw(r);
-        window.display();
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    const int width = 1280;
+    const int height = 720;
+    GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", NULL, NULL);
+    if (windowGL == NULL) {
+        cout << "Failed to create GLFW window" << endl;
+        glfwTerminate();
     }
+    glfwMakeContextCurrent(windowGL);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        cout << "Failed to initialize GLAD" << endl;
+        glfwTerminate();
+    }
+    glViewport(0, 0, width, height);
+    glfwSetFramebufferSizeCallback(windowGL, framebuffer_size_callback);
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+    while (!glfwWindowShouldClose(windowGL)) {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin,width,height);
+        world.Update(deltaTime, 16);
+        Draw(world,width,height);
+        glfwSwapBuffers(windowGL);
+        glfwPollEvents();
+    }
+   
+    glfwTerminate();
+
+
     return 0;
 }

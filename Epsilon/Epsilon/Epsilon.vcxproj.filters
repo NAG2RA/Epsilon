@@ -39,6 +39,9 @@
     <ClCompile Include="Water.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="glad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EpsilonBody.h">
@@ -62,5 +65,9 @@
     <ClInclude Include="Water.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="fragment_core.glsl" />
+    <Text Include="vertex_core.glsl" />
   </ItemGroup>
 </Project>

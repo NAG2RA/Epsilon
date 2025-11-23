@@ -40,13 +40,13 @@ public:
 	void MoveTo(EpsilonVector& pos);
 	void AddForce(EpsilonVector amount);
 	AABB GetAABB();
+	EpsilonVector Transform(EpsilonVector position, EpsilonVector endposition, float angle);
 private:
 	static vector<EpsilonVector> GetBoxVertices(float width, float height);
 	static vector<EpsilonVector> GetTriangleVertices(float side);
 	void UpdateRotation(float angle);
 	vector<EpsilonVector> transformedVertices;
 	vector<EpsilonVector> vertices;
-	EpsilonVector Transform(EpsilonVector position, EpsilonVector endposition, float angle);
 
 };
 

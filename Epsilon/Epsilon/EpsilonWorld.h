@@ -10,6 +10,7 @@ class EpsilonWorld
 public:
 	EpsilonWorld();
 	int GetBodyCount();
+	int GetWaterCount();
 	void AddBody(EpsilonBody body);
 	void RemoveBody(int index);
 	int GetDynamicBodyCount();
@@ -18,6 +19,7 @@ public:
 	void DeleteWater(int index);
 	void Update(float dt, int iterations);
 	EpsilonBody GetBody(float index);
+	Water GetWater(int index);
 	EpsilonBody* GetDynamicBody(float index);
 private:
 	float airResistanceConstant;

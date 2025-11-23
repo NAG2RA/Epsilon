@@ -78,7 +78,7 @@ EpsilonWorld::EpsilonWorld()
 	gravity(0,9.81f),
 	springConstant(20),
 	damperConstant(1),
-	damperThreadConstant(25),
+	damperThreadConstant(2),
 	damperWaterConstant(5),
 	airResistanceConstant(0.01f),
 	rotationalAirResistanceConstant(0.01f)
@@ -105,6 +105,11 @@ EpsilonBody EpsilonWorld::GetBody(float index)
 	return bodyList[index];
 }
 
+Water EpsilonWorld::GetWater(int index)
+{
+	return waterList[index];
+}
+
 EpsilonBody* EpsilonWorld::GetDynamicBody(float index)
 {
 	return dynamicBodyList[index];
@@ -113,6 +118,11 @@ EpsilonBody* EpsilonWorld::GetDynamicBody(float index)
 int EpsilonWorld::GetBodyCount()
 {
 	return bodyList.size();
+}
+
+int EpsilonWorld::GetWaterCount()
+{
+	return waterList.size();
 }
 
 void EpsilonWorld::Update(float dt, int iterations)
@@ -128,8 +138,8 @@ void EpsilonWorld::Update(float dt, int iterations)
 	lowPriorityObjects.clear();
 	PreFiltering();
 	UpdateMovement(dt, 1);
-	ResolveThreadConnection();
 	ResolveSpringConnection(dt, 1);
+	ResolveThreadConnection();
 	for (int it = 0; it < iterations / 2; it++) {
 		ResolveHighPrioritySpringConnection(dt,iterations/2.f);
 		UpdateHighPriorityMovement(dt, iterations / 2.f);
@@ -422,6 +432,9 @@ void EpsilonWorld::ResolveThreadConnection() {
 			EpsilonVector dir = lowPriorityObjects[i]->connectionPosition - lowPriorityObjects[i]->originPosition;
 			float dist = dir.Length();
 			float restDist = dist - lowPriorityObjects[i]->connectionDistance;
+			if (restDist > 0.01f) {
+				restDist = 0.01f;
+			}
 			float damperForce = -(damperThreadConstant * lowPriorityObjects[i]->linearVelocity.Dot(dir)) / dist;
 			lowPriorityObjects[i]->linearVelocity += -dir * (lowPriorityObjects[i]->inverseMass*restDist);
 			lowPriorityObjects[i]->AddForce(damperForce * dir);
@@ -460,6 +473,9 @@ void EpsilonWorld::ResolveHighPriorityThreadConnection()
 			EpsilonVector dir = highPriorityObjects[i]->connectionPosition - highPriorityObjects[i]->originPosition;
 			float dist = dir.Length();
 			float restDist = dist - highPriorityObjects[i]->connectionDistance;
+			if (restDist > 0.01f) {
+				restDist = 0.01f;
+			}
 			float damperForce = -(damperThreadConstant * highPriorityObjects[i]->linearVelocity.Dot(dir)) / dist;
 			highPriorityObjects[i]->linearVelocity += -dir * (highPriorityObjects[i]->inverseMass * restDist);
 			highPriorityObjects[i]->AddForce(damperForce * dir);
