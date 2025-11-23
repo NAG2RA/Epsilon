@@ -8,7 +8,7 @@
 class EpsilonWorld
 {
 public:
-	EpsilonWorld();
+	EpsilonWorld(int windowWidth,int windowHeight, float zoom);
 	int GetBodyCount();
 	int GetWaterCount();
 	void AddBody(EpsilonBody body);
@@ -26,6 +26,8 @@ private:
 	float rotationalAirResistanceConstant;
 	float springConstant, damperConstant, damperThreadConstant, damperWaterConstant;
 	float depth;
+	float zoom;
+	int windowWidth, windowHeight;
 	EpsilonVector gravity;
 	EpsilonVector normal;
 	vector<Water> waterList;
