@@ -23,6 +23,7 @@
     <ClCompile Include="CollisionManifold.cpp" />
     <ClCompile Include="Collisions.cpp" />
     <ClCompile Include="EpsilonBody.cpp" />
+    <ClCompile Include="EpsilonScheduler.cpp" />
     <ClCompile Include="EpsilonVector.cpp" />
     <ClCompile Include="EpsilonWorld.cpp" />
     <ClCompile Include="glad.c" />
@@ -34,6 +35,7 @@
     <ClInclude Include="CollisionManifold.h" />
     <ClInclude Include="Collisions.h" />
     <ClInclude Include="EpsilonBody.h" />
+    <ClInclude Include="EpsilonScheduler.h" />
     <ClInclude Include="EpsilonVector.h" />
     <ClInclude Include="EpsilonWorld.h" />
     <ClInclude Include="Water.h" />

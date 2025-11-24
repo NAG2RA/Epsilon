@@ -13,6 +13,7 @@
 #include"EpsilonWorld.h"
 #include"AABB.h"
 #include"EpsilonVector.h"
+#include"EpsilonScheduler.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -453,6 +454,7 @@ int main() {
     const int height = modeGL->height;
     const float zoom = 0.2f;
     EpsilonWorld world(width, height, zoom);
+    EpsilonScheduler scheduler;
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(960, 540), 1.f, 0.5f, 300, 3, true, none));
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(1080, 540), 1.f, 0.5f, 3, 300, true, none));
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(840, 540), 1.f, 0.5f, 3, 300, true, none));   
@@ -478,9 +480,19 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin,width,height,zoom);
-        world.Update(deltaTime, 8);
-        Draw(world,width,height,zoom);
+        scheduler.Schedule([&]() {
+            InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
+        });
+        //InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin,width,height,zoom);
+        scheduler.Schedule([&]() {
+            world.Update(deltaTime, 8);
+        });
+        //world.Update(deltaTime, 8);
+        scheduler.Schedule([&]() {
+            Draw(world,width,height,zoom);
+        });
+        
+        scheduler.Run();
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
     }
