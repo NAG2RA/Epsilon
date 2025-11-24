@@ -38,12 +38,7 @@ string loadShaderSrc(const char* filename) {
 
     return ret;
 }
-
-<<<<<<< HEAD
 void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& ispressed, int& contype, float& timer, EpsilonVector& origin, int width, int height,float zoom) {
-=======
-void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& ispressed, int& contype, float& timer, EpsilonVector& origin, int width, int height) {
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
 
 
 
@@ -55,13 +50,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
 
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
 
@@ -72,13 +62,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false, spring);
@@ -92,13 +77,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false, thr);
@@ -118,13 +98,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, none));
@@ -134,13 +109,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, spring);
@@ -153,13 +123,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, thr);
@@ -178,13 +143,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 world.AddBody(EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX,spawnY), 1.5f, 0.5f, 2, false, none));
@@ -194,13 +154,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, spring);
@@ -213,13 +168,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 glfwGetCursorPos(window, &xpos, &ypos);
                 float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
                 float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
                 float targetNDC_X = mouseNDC_X * zoom;
                 float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-                float targetNDC_X = mouseNDC_X / 5;
-                float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
                 EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, thr);
@@ -236,13 +186,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
             glfwGetCursorPos(window, &xpos, &ypos);
             float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
             float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
             float targetNDC_X = mouseNDC_X * zoom;
             float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-            float targetNDC_X = mouseNDC_X / 5;
-            float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
             float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
             world.Explosion(EpsilonVector(spawnX, spawnY), 10, 100);
@@ -256,13 +201,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
         glfwGetCursorPos(window, &xpos, &ypos);
         float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
         float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
         float targetNDC_X = mouseNDC_X * zoom;
         float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-        float targetNDC_X = mouseNDC_X / 5;
-        float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
         float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
         float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
         origin = EpsilonVector(spawnX, spawnY);
@@ -273,13 +213,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
         glfwGetCursorPos(window, &xpos, &ypos);
         float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
         float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
         float targetNDC_X = mouseNDC_X * zoom;
         float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-        float targetNDC_X = mouseNDC_X / 5;
-        float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
         float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
         float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
         origin = EpsilonVector(spawnX, spawnY);
@@ -291,25 +226,17 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
             glfwGetCursorPos(window, &xpos, &ypos);
             float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
             float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
-<<<<<<< HEAD
             float targetNDC_X = mouseNDC_X * zoom;
             float targetNDC_Y = mouseNDC_Y * zoom;
-=======
-            float targetNDC_X = mouseNDC_X / 5;
-            float targetNDC_Y = mouseNDC_Y / 5;
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
             float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
             world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 1, false, none));
             timer = 0.02f;
         }
     }
-<<<<<<< HEAD
     else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
-=======
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
     else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
         cout << world.GetBodyCount() << endl;
     }
@@ -318,11 +245,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
     }
 }
 
-<<<<<<< HEAD
 void Draw(EpsilonWorld& world, int width, int height, float zoom) {
-=======
-void Draw(EpsilonWorld& world, int width, int height) {
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
     int success;
     char infoLog[512];
     unsigned int vertexShader;
@@ -385,15 +308,9 @@ void Draw(EpsilonWorld& world, int width, int height) {
         if (world.GetBody(i).shapetype == triangle) {
             vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
             vector<float> vertices = {
-<<<<<<< HEAD
                  (1/zoom) * ((v[1].x / width) * 2 - 1), (1/zoom) * (1 - (v[1].y / height) * 2),0.0f,
                  (1/zoom) * ((v[0].x / width) * 2 - 1), (1/zoom) * (1 - (v[0].y / height) * 2),0.0f,
                  (1/zoom) * ((v[2].x / width) * 2 - 1), (1/zoom) * (1 - (v[2].y / height) * 2),0.0f
-=======
-                 5 * ((v[1].x / width) * 2 - 1), 5 * (1 - (v[1].y / height) * 2),0.0f,
-                 5 * ((v[0].x / width) * 2 - 1), 5 * (1 - (v[0].y / height) * 2),0.0f,
-                 5 * ((v[2].x / width) * 2 - 1), 5 * (1 - (v[2].y / height) * 2),0.0f
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             };
             int offset = allVert.size() / 3;
             vector<int> indices = {
@@ -407,17 +324,11 @@ void Draw(EpsilonWorld& world, int width, int height) {
         else if (world.GetBody(i).shapetype == box) {
             vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
             vector<float> vertices = {
-<<<<<<< HEAD
+
                  (1/zoom) * ((v[3].x / width) * 2 - 1), (1/zoom) * (1 - (v[3].y / height) * 2),0.0f,
                  (1/zoom) * ((v[0].x / width) * 2 - 1), (1/zoom) * (1 - (v[0].y / height) * 2),0.0f,
                  (1/zoom) * ((v[1].x / width) * 2 - 1), (1/zoom) * (1 - (v[1].y / height) * 2),0.0f,
                  (1/zoom) * ((v[2].x / width) * 2 - 1), (1/zoom) * (1 - (v[2].y / height) * 2),0.0f
-=======
-                 5 * ((v[3].x / width) * 2 - 1), 5 * (1 - (v[3].y / height) * 2),0.0f,
-                 5 * ((v[0].x / width) * 2 - 1), 5 * (1 - (v[0].y / height) * 2),0.0f,
-                 5 * ((v[1].x / width) * 2 - 1), 5 * (1 - (v[1].y / height) * 2),0.0f,
-                 5 * ((v[2].x / width) * 2 - 1), 5 * (1 - (v[2].y / height) * 2),0.0f
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             };
             int offset = allVert.size() / 3;
             vector<int> indices = {
@@ -433,27 +344,16 @@ void Draw(EpsilonWorld& world, int width, int height) {
             float pi = 3.1415926;
             vector<float> vertices;
             vector<int> indices;
-<<<<<<< HEAD
             vertices.push_back((1/zoom) * ((body.position.x / width) * 2 - 1));
             vertices.push_back((1/zoom) * (1 - (body.position.y / height) * 2));
-=======
-            vertices.push_back(5 * ((body.position.x / width) * 2 - 1));
-            vertices.push_back(5 * (1 - (body.position.y / height) * 2));
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             vertices.push_back(0.0f);
             int segments = 10;
             float rad = body.radius;
             EpsilonVector pos = body.position;
             for (int i = 0; i <= segments; i++) {
                 float angle = 2.0f * pi * (float)i / (float)segments;
-
-<<<<<<< HEAD
                 vertices.push_back((1/zoom) * (((pos.x + cos(angle) * rad) / width) * 2 - 1));
                 vertices.push_back((1/zoom) * (1 - ((pos.y + sin(angle) * rad) / height) * 2));
-=======
-                vertices.push_back(5 * (((pos.x + cos(angle) * rad) / width) * 2 - 1));
-                vertices.push_back(5 * (1 - ((pos.y + sin(angle) * rad) / height) * 2));
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
                 vertices.push_back(0.0f);
             }
             int offset = allVert.size() / 3;
@@ -468,13 +368,8 @@ void Draw(EpsilonWorld& world, int width, int height) {
         if (world.GetBody(i).connectiontype == spring) {
 
             float vertices[] = {
-<<<<<<< HEAD
                  (1/zoom) * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
                  (1/zoom) * ((world.GetBody(i).originPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
-=======
-                 5 * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
-                 5 * ((world.GetBody(i).originPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             };
             int indices[] = {
                  0,  1
@@ -487,13 +382,8 @@ void Draw(EpsilonWorld& world, int width, int height) {
         }
         else if (world.GetBody(i).connectiontype == thr) {
             float vertices[] = {
-<<<<<<< HEAD
                  (1/zoom) * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
                  (1/zoom) * ((world.GetBody(i).originPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
-=======
-                 5 * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
-                 5 * ((world.GetBody(i).originPosition.x / width) * 2 - 1), 5 * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
             };
             int indices[] = {
                  0,  1
@@ -520,17 +410,10 @@ void Draw(EpsilonWorld& world, int width, int height) {
 
         Water w = world.GetWater(i);
         vector<float> vertices = {
-<<<<<<< HEAD
                 (1/zoom) * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f,
                 (1/zoom) * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
                 (1/zoom) * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
                 (1/zoom) * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f
-=======
-                5 * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f,
-                5 * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
-                5 * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
-                5 * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), 5 * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
         };
         int offset = waterVertices.size() / 3;
         vector<int> indices = {
@@ -559,19 +442,11 @@ int main() {
     bool ispressed = false;
     int contype = 0;
     float timer = 0.02f;
-    EpsilonVector origin;
-<<<<<<< HEAD
-=======
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(640, 370), 1.f, 0.5f, 300, 3, true, none));
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(740, 370), 1.f, 0.5f, 3, 300, true, none));
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(540, 370), 1.f, 0.5f, 3, 300, true, none));   
-    world.CreateWater(EpsilonVector(640, 375), 30, 3, 1);
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
+    EpsilonVector origin;  
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-<<<<<<< HEAD
     GLFWmonitor* monitorGL = glfwGetPrimaryMonitor();
     const GLFWvidmode* modeGL = glfwGetVideoMode(monitorGL);
     const int width = modeGL->width;
@@ -583,11 +458,6 @@ int main() {
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(840, 540), 1.f, 0.5f, 3, 300, true, none));   
     world.CreateWater(EpsilonVector(960, 580), 150, 30, 1);
     GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", monitorGL, NULL);
-=======
-    const int width = 1280;
-    const int height = 720;
-    GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", NULL, NULL);
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
     if (windowGL == NULL) {
         cout << "Failed to create GLFW window" << endl;
         glfwTerminate();
@@ -608,15 +478,9 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-<<<<<<< HEAD
         InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin,width,height,zoom);
         world.Update(deltaTime, 8);
         Draw(world,width,height,zoom);
-=======
-        InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin,width,height);
-        world.Update(deltaTime, 16);
-        Draw(world,width,height);
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
     }

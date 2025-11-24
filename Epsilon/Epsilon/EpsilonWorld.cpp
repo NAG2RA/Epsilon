@@ -79,11 +79,7 @@ EpsilonWorld::EpsilonWorld(int windowWidth, int windowHeight, float zoom)
 	springConstant(20),
 	damperConstant(1),
 	damperThreadConstant(2),
-<<<<<<< HEAD
 	damperWaterConstant(1),
-=======
-	damperWaterConstant(5),
->>>>>>> c7a5e84a5feda42cf4b6d81ea21d216942f8af9f
 	airResistanceConstant(0.01f),
 	rotationalAirResistanceConstant(0.01f),
 	windowWidth(windowWidth),
