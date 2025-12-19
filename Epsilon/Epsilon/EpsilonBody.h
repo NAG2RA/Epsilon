@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
 #include<vector>
+#include<mutex>
 #include"AABB.h"
 #include"EpsilonVector.h"
 using namespace std;
@@ -18,6 +19,7 @@ enum Connectiontype {
 class EpsilonBody
 {
 public:
+	bool isLocked;
 	float angle, angularVelocity, inverseMass, connectionDistance;
 	float density, mass, restitution, area, radius, width, height, inertia, inverseInertia, dynamicFriction, staticFriction;
 	bool isStatic;

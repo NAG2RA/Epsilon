@@ -8,12 +8,13 @@
 #include<vector>
 #include<cmath>
 #include<ctime>
+#include<thread>
+#include<Tracy.hpp>
 #include"EpsilonBody.h"
 #include"Collisions.h"
 #include"EpsilonWorld.h"
 #include"AABB.h"
 #include"EpsilonVector.h"
-#include"EpsilonScheduler.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -40,7 +41,7 @@ string loadShaderSrc(const char* filename) {
     return ret;
 }
 void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& ispressed, int& contype, float& timer, EpsilonVector& origin, int width, int height,float zoom) {
-
+    
 
 
     if (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
@@ -247,6 +248,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
 }
 
 void Draw(EpsilonWorld& world, int width, int height, float zoom) {
+    
     int success;
     char infoLog[512];
     unsigned int vertexShader;
@@ -438,7 +440,8 @@ void Draw(EpsilonWorld& world, int width, int height, float zoom) {
 }
 
 
-int main() {  
+int main() {
+    
     srand(time(0));
     bool ispressed = false;
     int contype = 0;
@@ -454,7 +457,6 @@ int main() {
     const int height = modeGL->height;
     const float zoom = 0.2f;
     EpsilonWorld world(width, height, zoom);
-    EpsilonScheduler scheduler;
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(960, 540), 1.f, 0.5f, 300, 3, true, none));
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(1080, 540), 1.f, 0.5f, 3, 300, true, none));
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(840, 540), 1.f, 0.5f, 3, 300, true, none));   
@@ -480,25 +482,16 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        scheduler.Schedule([&]() {
-            InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
-        });
-        //InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin,width,height,zoom);
-        scheduler.Schedule([&]() {
-            world.Update(deltaTime, 8);
-        });
-        //world.Update(deltaTime, 8);
-        scheduler.Schedule([&]() {
-            Draw(world,width,height,zoom);
-        });
-        
-        scheduler.Run();
+
+        Draw(world, width, height, zoom);
+        world.Update(deltaTime, 8);
+        InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
+
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
     }
    
     glfwTerminate();
-
 
     return 0;
 }

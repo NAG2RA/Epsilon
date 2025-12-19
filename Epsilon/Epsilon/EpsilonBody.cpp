@@ -12,6 +12,7 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	restitution(restitution),
 	area(area),
 	radius(radius),
+	isLocked(false),
 	width(width),
 	height(height),
 	isStatic(isStatic),

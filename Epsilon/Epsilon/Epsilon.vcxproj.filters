@@ -42,7 +42,10 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EpsilonScheduler.cpp">
+    <ClCompile Include="..\tracy\public\TracyClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Users\aliks\Downloads\enkiTS-master\enkiTS-master\src\TaskScheduler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -66,9 +69,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Water.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EpsilonScheduler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
