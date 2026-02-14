@@ -9,6 +9,8 @@ public:
 	EpsilonVector contact1;
 	EpsilonVector contact2;
 	EpsilonVector normal;
+	vector<EpsilonVector> prevImp;
+	vector<float> prevAngImp;
 	float depth;
 	int contactCount;
 	CollisionManifold(EpsilonBody& bA, EpsilonBody& bB, EpsilonVector c1, EpsilonVector c2, EpsilonVector& n, float& d, int cCount);

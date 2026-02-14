@@ -16,7 +16,6 @@
 #include"AABB.h"
 #include"EpsilonVector.h"
 using namespace std;
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -40,9 +39,240 @@ string loadShaderSrc(const char* filename) {
 
     return ret;
 }
+class Renderer {
+public:
+    unsigned int shaderProgram;
+    unsigned int VAO, VBO, EBO;
+    unsigned int vertexShader;
+    unsigned int fragmentShader;
+    vector<float> allVert;
+    vector<int> allIndic;
+    vector<float> waterVertices;
+    vector<int> waterIndices;
+    GLint colorLoc;
+    GLint screenSize;
+    GLint zoomGL;
+    void Initialize() {
+        int success;
+        char infoLog[512];
+       
+        vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        string vertexShaderSrc = loadShaderSrc("vertex_core.glsl");
+        const GLchar* vert = vertexShaderSrc.c_str();
+        glShaderSource(vertexShader, 1, &vert, NULL);
+        glCompileShader(vertexShader);
+
+        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+            cout << "Could not compile vertexShader " << "Log:" << endl << infoLog << endl;
+        }
+
+       
+        fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        string fragmentShaderSrc = loadShaderSrc("fragment_core.glsl");
+        const GLchar* frag = fragmentShaderSrc.c_str();
+        glShaderSource(fragmentShader, 1, &frag, NULL);
+        glCompileShader(fragmentShader);
+
+        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+            cout << "Could not compile fragmentShader " << "Log:" << endl << infoLog << endl;
+        }
+
+
+        
+        shaderProgram = glCreateProgram();
+
+        glAttachShader(shaderProgram, vertexShader);
+        glAttachShader(shaderProgram, fragmentShader);
+        glLinkProgram(shaderProgram);
+
+        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+        if (!success) {
+            glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+            cout << "Could not link shaderProgram " << "Log:" << endl << infoLog << endl;
+        }
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        colorLoc = glGetUniformLocation(shaderProgram, "Color");
+        screenSize = glGetUniformLocation(shaderProgram, "screenSize");
+        zoomGL = glGetUniformLocation(shaderProgram, "zoom");
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    }
+    void Render(EpsilonWorld& world, int width, int height, float zoom) {
+        //ZoneScoped;
+        allVert.clear();
+        allIndic.clear();
+
+        allVert.reserve(world.GetBodyCount() * 12);
+        allIndic.reserve(world.GetBodyCount() * 6);
+        
+        glUniform2f(screenSize, width, height);
+        glUniform1f(zoomGL, zoom);
+        for (int i = 0; i < world.GetBodyCount(); i++) {
+            //ZoneScoped;
+           // ZoneScopedN("Body");
+            if (world.GetBody(i).shapetype == triangle) {
+                vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
+                vector<float> vertices = {
+                    v[1].x, v[1].y,0.0f,
+                    v[0].x, v[0].y,0.0f,
+                    v[2].x, v[2].y,0.0f
+                };
+                int offset = allVert.size() / 3;
+                vector<int> indices = {
+                    offset + 0,offset + 1,offset + 2
+                };
+                allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+                allIndic.insert(allIndic.end(), indices.begin(), indices.end());
+
+
+            }
+            else if (world.GetBody(i).shapetype == box) {
+                vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
+                vector<float> vertices = {
+
+                     v[3].x, v[3].y,0.0f,
+                     v[0].x, v[0].y,0.0f,
+                     v[1].x, v[1].y,0.0f,
+                     v[2].x, v[2].y,0.0f
+                };
+                int offset = allVert.size() / 3;
+                vector<int> indices = {
+                    offset + 0,offset + 1,offset + 2,
+                    offset + 0,offset + 3,offset + 2
+                };
+                allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+                allIndic.insert(allIndic.end(), indices.begin(), indices.end());
+
+            }
+            else if (world.GetBody(i).shapetype == circle) {
+                EpsilonBody body = world.GetBody(i);
+                float pi = 3.1415926;
+                vector<float> vertices;
+                vector<int> indices;
+                vertices.push_back(body.position.x);
+                vertices.push_back(body.position.y);
+                vertices.push_back(0.0f);
+                int segments = 10;
+                float rad = body.radius;
+                EpsilonVector pos = body.position;
+                for (int i = 0; i <= segments; i++) {
+                    float angle = 2.0f * pi * (float)i / (float)segments;
+                    vertices.push_back(pos.x + cos(angle) * rad);
+                    vertices.push_back(pos.y + sin(angle) * rad);
+                    vertices.push_back(0.0f);
+                }
+                int offset = allVert.size() / 3;
+                for (int i = 0; i < segments; i++) {
+                    indices.push_back(offset + 0);
+                    indices.push_back(offset + i + 1);
+                    indices.push_back(offset + i + 2);
+                }
+                allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+                allIndic.insert(allIndic.end(), indices.begin(), indices.end());
+            }
+            if (world.GetBody(i).connectiontype == spring) {
+
+                float vertices[] = {
+                     world.GetBody(i).connectionPosition.x, world.GetBody(i).connectionPosition.y,0.0f,
+                     world.GetBody(i).originPosition.x, world.GetBody(i).originPosition.y,0.0f
+                };
+                int indices[] = {
+                     0,  1
+                };
+                glUseProgram(shaderProgram);
+                glUniform4f(colorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), NULL, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ARRAY_BUFFER, 0,sizeof(vertices), vertices);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,0, sizeof(indices), indices);
+                glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
+            }
+            else if (world.GetBody(i).connectiontype == thr) {
+                float vertices[] = {
+                    world.GetBody(i).connectionPosition.x, world.GetBody(i).connectionPosition.y,0.0f,
+                     world.GetBody(i).originPosition.x, world.GetBody(i).originPosition.y,0.0f
+                };
+                int indices[] = {
+                     0,  1
+                };
+                glUseProgram(shaderProgram);
+                glUniform4f(colorLoc, 0.0f, 0.0f, 1.0f, 1.0f);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), NULL, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
+                glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
+            }
+        }
+        {
+            //ZoneScopedN("RenderBody");
+            glUseProgram(shaderProgram);
+            glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f);
+            glBufferData(GL_ARRAY_BUFFER, allVert.size() * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, allVert.size() * sizeof(float), allVert.data());
+
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, allIndic.size() * sizeof(unsigned int), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,0, allIndic.size() * sizeof(unsigned int), allIndic.data());
+            glDrawElements(GL_TRIANGLES, allIndic.size(), GL_UNSIGNED_INT, 0);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+        waterVertices.clear();
+        waterIndices.clear();
+        waterVertices.reserve(world.GetWaterCount() * 12);
+        waterIndices.reserve(world.GetWaterCount() * 6);
+        for (int i = 0; i < world.GetWaterCount(); i++) {
+            //ZoneScopedN("Water");
+            Water w = world.GetWater(i);
+            vector<float> vertices = {
+                    w.surfacePosition.x - (w.width / 2.f), w.surfacePosition.y + (w.depth),0.0f,
+                    w.surfacePosition.x - (w.width / 2.f), w.surfacePosition.y,0.0f,
+                    w.surfacePosition.x + (w.width / 2.f), w.surfacePosition.y,0.0f,
+                    w.surfacePosition.x + (w.width / 2.f), w.surfacePosition.y + (w.depth),0.0f
+            };
+            int offset = waterVertices.size() / 3;
+            vector<int> indices = {
+                offset + 0,offset + 1,offset + 2,
+                offset + 0,offset + 3,offset + 2
+            };
+            waterVertices.insert(waterVertices.end(), vertices.begin(), vertices.end());
+            waterIndices.insert(waterIndices.end(), indices.begin(), indices.end());
+        }
+        {
+            //ZoneScopedN("RenderWater");
+            glUniform4f(colorLoc, 0.06f, 0.44f, 0.99f, 0.4f);
+            glUseProgram(shaderProgram);
+            glBufferData(GL_ARRAY_BUFFER, waterVertices.size() * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER,0, waterVertices.size() * sizeof(float), waterVertices.data());
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, waterIndices.size() * sizeof(unsigned int), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,0, waterIndices.size() * sizeof(unsigned int), waterIndices.data());
+            glDrawElements(GL_TRIANGLES, waterIndices.size(), GL_UNSIGNED_INT, 0);
+
+            glDisable(GL_BLEND);
+        }
+    }
+    ~Renderer() {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+        glDeleteProgram(shaderProgram);
+    }
+};
 void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& ispressed, int& contype, float& timer, EpsilonVector& origin, int width, int height,float zoom) {
     
-
+    //ZoneScoped;
 
     if (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         if (!ispressed) {
@@ -57,7 +287,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
 
-                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX,spawnY), 0.7f, 0.5f, 2, 2, false, none));
+                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX,spawnY), 0.7f, 0.5f, 4, 4, false, none));
             }
             else if (contype == 1) {
                 double xpos, ypos;
@@ -246,201 +476,8 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
         ispressed = false;
     }
 }
-
-void Draw(EpsilonWorld& world, int width, int height, float zoom) {
-    
-    int success;
-    char infoLog[512];
-    unsigned int vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    string vertexShaderSrc = loadShaderSrc("vertex_core.glsl");
-    const GLchar* vert = vertexShaderSrc.c_str();
-    glShaderSource(vertexShader, 1, &vert, NULL);
-    glCompileShader(vertexShader);
-
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        cout << "Could not compile vertexShader " << "Log:" << endl << infoLog << endl;
-    }
-
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    string fragmentShaderSrc = loadShaderSrc("fragment_core.glsl");
-    const GLchar* frag = fragmentShaderSrc.c_str();
-    glShaderSource(fragmentShader, 1, &frag, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        cout << "Could not compile fragmentShader " << "Log:" << endl << infoLog << endl;
-    }
-
-
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        cout << "Could not link shaderProgram " << "Log:" << endl << infoLog << endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    unsigned int VAO, VBO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-    vector<float> allVert;
-    vector<int> allIndic;
-    for (int i = 0; i < world.GetBodyCount(); i++) {
-
-        if (world.GetBody(i).shapetype == triangle) {
-            vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
-            vector<float> vertices = {
-                 (1/zoom) * ((v[1].x / width) * 2 - 1), (1/zoom) * (1 - (v[1].y / height) * 2),0.0f,
-                 (1/zoom) * ((v[0].x / width) * 2 - 1), (1/zoom) * (1 - (v[0].y / height) * 2),0.0f,
-                 (1/zoom) * ((v[2].x / width) * 2 - 1), (1/zoom) * (1 - (v[2].y / height) * 2),0.0f
-            };
-            int offset = allVert.size() / 3;
-            vector<int> indices = {
-                offset + 0,offset + 1,offset + 2
-            };
-            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
-            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
-
-
-        }
-        else if (world.GetBody(i).shapetype == box) {
-            vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
-            vector<float> vertices = {
-
-                 (1/zoom) * ((v[3].x / width) * 2 - 1), (1/zoom) * (1 - (v[3].y / height) * 2),0.0f,
-                 (1/zoom) * ((v[0].x / width) * 2 - 1), (1/zoom) * (1 - (v[0].y / height) * 2),0.0f,
-                 (1/zoom) * ((v[1].x / width) * 2 - 1), (1/zoom) * (1 - (v[1].y / height) * 2),0.0f,
-                 (1/zoom) * ((v[2].x / width) * 2 - 1), (1/zoom) * (1 - (v[2].y / height) * 2),0.0f
-            };
-            int offset = allVert.size() / 3;
-            vector<int> indices = {
-                offset + 0,offset + 1,offset + 2,
-                offset + 0,offset + 3,offset + 2
-            };
-            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
-            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
-
-        }
-        else if (world.GetBody(i).shapetype == circle) {
-            EpsilonBody body = world.GetBody(i);
-            float pi = 3.1415926;
-            vector<float> vertices;
-            vector<int> indices;
-            vertices.push_back((1/zoom) * ((body.position.x / width) * 2 - 1));
-            vertices.push_back((1/zoom) * (1 - (body.position.y / height) * 2));
-            vertices.push_back(0.0f);
-            int segments = 10;
-            float rad = body.radius;
-            EpsilonVector pos = body.position;
-            for (int i = 0; i <= segments; i++) {
-                float angle = 2.0f * pi * (float)i / (float)segments;
-                vertices.push_back((1/zoom) * (((pos.x + cos(angle) * rad) / width) * 2 - 1));
-                vertices.push_back((1/zoom) * (1 - ((pos.y + sin(angle) * rad) / height) * 2));
-                vertices.push_back(0.0f);
-            }
-            int offset = allVert.size() / 3;
-            for (int i = 0; i < segments; i++) {
-                indices.push_back(offset + 0);
-                indices.push_back(offset + i + 1);
-                indices.push_back(offset + i + 2);
-            }
-            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
-            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
-        }
-        if (world.GetBody(i).connectiontype == spring) {
-
-            float vertices[] = {
-                 (1/zoom) * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
-                 (1/zoom) * ((world.GetBody(i).originPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
-            };
-            int indices[] = {
-                 0,  1
-            };
-            glUseProgram(shaderProgram);
-            glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 0.0f, 1.0f, 0.0f, 1.0f);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
-            glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
-        }
-        else if (world.GetBody(i).connectiontype == thr) {
-            float vertices[] = {
-                 (1/zoom) * ((world.GetBody(i).connectionPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).connectionPosition.y / height) * 2),0.0f,
-                 (1/zoom) * ((world.GetBody(i).originPosition.x / width) * 2 - 1), (1/zoom) * (1 - (world.GetBody(i).originPosition.y / height) * 2),0.0f
-            };
-            int indices[] = {
-                 0,  1
-            };
-            glUseProgram(shaderProgram);
-            glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 0.0f, 0.0f, 1.0f, 1.0f);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
-            glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
-        }
-    }
-
-    glUseProgram(shaderProgram);
-    glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 1.0f, 1.0f, 1.0f, 1.0f);
-    glBufferData(GL_ARRAY_BUFFER, allVert.size() * sizeof(float), allVert.data(), GL_DYNAMIC_DRAW);
-
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, allIndic.size() * sizeof(unsigned int), allIndic.data(), GL_DYNAMIC_DRAW);
-    glDrawElements(GL_TRIANGLES, allIndic.size(), GL_UNSIGNED_INT, 0);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    vector<float> waterVertices;
-    vector<int> waterIndices;
-    for (int i = 0; i < world.GetWaterCount(); i++) {
-
-        Water w = world.GetWater(i);
-        vector<float> vertices = {
-                (1/zoom) * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f,
-                (1/zoom) * (((w.surfacePosition.x - (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
-                (1/zoom) * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y) / height) * 2),0.0f,
-                (1/zoom) * (((w.surfacePosition.x + (w.width / 2.f)) / width) * 2 - 1), (1/zoom) * (1 - ((w.surfacePosition.y + (w.depth)) / height) * 2),0.0f
-        };
-        int offset = waterVertices.size() / 3;
-        vector<int> indices = {
-            offset + 0,offset + 1,offset + 2,
-            offset + 0,offset + 3,offset + 2
-        };
-        waterVertices.insert(waterVertices.end(), vertices.begin(), vertices.end());
-        waterIndices.insert(waterIndices.end(), indices.begin(), indices.end());
-    }
-    glUniform4f(glGetUniformLocation(shaderProgram, "Color"), 0.06f, 0.44f, 0.99f, 0.4f);
-    glUseProgram(shaderProgram);
-    glBufferData(GL_ARRAY_BUFFER, waterVertices.size() * sizeof(float), waterVertices.data(), GL_DYNAMIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, waterIndices.size() * sizeof(unsigned int), waterIndices.data(), GL_DYNAMIC_DRAW);
-    glDrawElements(GL_TRIANGLES, waterIndices.size(), GL_UNSIGNED_INT, 0);
-
-    glDisable(GL_BLEND);
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shaderProgram);
-}
-
-
 int main() {
+    Renderer renderer;
     
     srand(time(0));
     bool ispressed = false;
@@ -461,7 +498,7 @@ int main() {
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(1080, 540), 1.f, 0.5f, 3, 300, true, none));
     world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(840, 540), 1.f, 0.5f, 3, 300, true, none));   
     world.CreateWater(EpsilonVector(960, 580), 150, 30, 1);
-    GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", monitorGL, NULL);
+    GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", NULL, NULL);
     if (windowGL == NULL) {
         cout << "Failed to create GLFW window" << endl;
         glfwTerminate();
@@ -474,6 +511,7 @@ int main() {
     }
     glViewport(0, 0, width, height);
     glfwSetFramebufferSizeCallback(windowGL, framebuffer_size_callback);
+    renderer.Initialize();
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(windowGL)) {
@@ -482,13 +520,13 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
-        Draw(world, width, height, zoom);
-        world.Update(deltaTime, 8);
+        renderer.Render(world, width, height, zoom);
         InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
+        world.Update(deltaTime, 1);
 
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
+        //FrameMark;
     }
    
     glfwTerminate();

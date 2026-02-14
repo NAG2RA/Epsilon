@@ -19,6 +19,8 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	shapetype(shapetype),
 	connectiontype(connectiontype),
 	angle(0.f),
+	isSleeping(false),
+	sleepTimer(0.0f),
 	angularVelocity(0.f),
 	linearVelocity(0, 0),
 	force(0, 0),
@@ -27,8 +29,8 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	inverseMass(mass > 0 ? (float)1 / mass : 0),
 	inverseInertia(inertia > 0 ? (float)1 / inertia : 0),
 	vertices(vertices),
-	dynamicFriction(0.4f),
-	staticFriction(0.6f)
+	dynamicFriction(0.6f),
+	staticFriction(0.8f)
 {
 	if (shapetype == Shapetype::box) 
 	{

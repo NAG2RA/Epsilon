@@ -5,7 +5,7 @@ bool Collisions::NearlyEqual(float a, float b) {
     return abs(a - b) < nearlyEqual;
 }
 bool Collisions::NearlyEqual(EpsilonVector a, EpsilonVector b) {
-    float nearlyEqual = 0.0005f;
+    float nearlyEqual = 0.0000005f;
     return a.DistanceSquared(b)<nearlyEqual*nearlyEqual;
 }
 bool Collisions::IntersectCircles(float radiusA, float radiusB, EpsilonVector centerA, EpsilonVector centerB, EpsilonVector& normal, float& depth)

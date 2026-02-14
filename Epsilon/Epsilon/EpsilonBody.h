@@ -23,6 +23,9 @@ public:
 	float angle, angularVelocity, inverseMass, connectionDistance;
 	float density, mass, restitution, area, radius, width, height, inertia, inverseInertia, dynamicFriction, staticFriction;
 	bool isStatic;
+	bool isSleeping;
+	float sleepTimer;
+	vector<int> collisions;
 	EpsilonVector position, linearVelocity, force, originPosition, connectionPosition;
 	AABB aabb;
 	Shapetype shapetype;

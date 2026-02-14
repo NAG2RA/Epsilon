@@ -83,6 +83,30 @@ private:
 		}
 	}
 };
+class Island {
+public:
+	vector<int> bodyIndices;
+	int sleepTimer;
+	bool isAsleep = false;
+	vector<CollisionManifold> manifolds;
+};
+class DSU {
+public:
+	vector<int> parent;
+	DSU(int n) {
+		parent.resize(n);
+		for (int i = 0; i < n; i++) parent[i] = i;
+	}
+	int find(int i) {
+		if (parent[i] == i) return i;
+		return parent[i] = find(parent[i]);
+	}
+	void unite(int i, int j) {
+		int root_i = find(i);
+		int root_j = find(j);
+		if (root_i != root_j) parent[root_i] = root_j;
+	}
+};
 class EpsilonWorld
 {
 public:
@@ -109,30 +133,33 @@ private:
 	float springConstant, damperConstant, damperThreadConstant, damperWaterConstant;
 	float depth;
 	float zoom;
+	float angularVelocityThreshold;
+	float linearVelocityThreshold;
 	int windowWidth, windowHeight;
 	EpsilonVector gravity;
 	EpsilonVector normal;
 	vector<Water> waterList;
 	vector<EpsilonBody> bodyList;
 	vector<int> dynamicBodyList;
+	vector<int> nonStaticBodies;
 	vector<vector<int>> contactPairs;
 	vector<int> potentialColliders;
-	vector<int> highPriorityObjects;
-	vector<int> lowPriorityObjects;
-	void PreFiltering();
+	vector<CollisionManifold> allManifolds;
+	vector<Island> islands;
+	void PreFiltering(float dt);
 	void UpdateMovement(uint32_t start, uint32_t end, float dt, int iterations);
-	void UpdateHighPriorityMovement(uint32_t start, uint32_t end, float dt, int iterations);
-	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv);
+	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv,float depth);
 	void BroadPhase(int windowWidth = 1280, int windowHeight = 720, float zoom = 1.f);
+	void WarmStart(int start, int end);
 	void NarrowPhase(int start, int end);
+	void BuildIslands();
+	void SolveIslands(int start, int end,float dt, int iterations);
 	void ResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveCollisonWithRotation(CollisionManifold& manifold);
 	void ResolveCollisonWithRotationAndFriction(CollisionManifold& manifold);
 	void ZoZoResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveThreadConnection(int start, int end);
 	void ResolveSpringConnection(int start, int end,float dt, int iterations);
-	void ResolveHighPriorityThreadConnection(int start, int end);
-	void ResolveHighPrioritySpringConnection(int start, int end, float dt, int iterations);
 	void Buoyancy(int start, int end);
 	void AirResistance(int start, int end, float dt, int iterations);
 
