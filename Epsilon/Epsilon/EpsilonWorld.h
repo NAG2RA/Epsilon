@@ -4,6 +4,7 @@
 #include<condition_variable>
 #include<Tracy.hpp>
 #include<enkiTS/TaskScheduler.h>
+#include<map>
 #include"EpsilonBody.h"
 #include"Collisions.h"
 #include"CollisionManifold.h"
@@ -144,14 +145,13 @@ private:
 	vector<int> nonStaticBodies;
 	vector<vector<int>> contactPairs;
 	vector<int> potentialColliders;
-	vector<CollisionManifold> allManifolds;
 	vector<Island> islands;
+	map<vector<int>, CollisionManifold> prevManifolds;
 	void PreFiltering(float dt);
 	void UpdateMovement(uint32_t start, uint32_t end, float dt, int iterations);
 	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv,float depth);
 	void BroadPhase(int windowWidth = 1280, int windowHeight = 720, float zoom = 1.f);
-	void WarmStart(int start, int end);
-	void NarrowPhase(int start, int end);
+	void NarrowPhase(int start, int end,float dt);
 	void BuildIslands();
 	void SolveIslands(int start, int end,float dt, int iterations);
 	void ResolveCollisonBasic(CollisionManifold& manifold);

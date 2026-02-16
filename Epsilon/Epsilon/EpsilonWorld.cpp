@@ -87,20 +87,14 @@ void EpsilonWorld::Update(float dt, int iterations)
 	PreFiltering(dt);
 	for (int it = 0; it < iterations; it++) {
 		contactPairs.clear();
-		allManifolds.clear();
 		islands.clear();
 		BroadPhase(windowWidth, windowHeight, zoom);
-		
-			//WarmStart(0, 0);
-			
-			NarrowPhase(0,0);
-			
+		NarrowPhase(0,0,dt);	
 		BuildIslands();
 		RunTask(islands.size(), [this, &dt,iterations](uint32_t start, uint32_t end, uint32_t threadNum) {
 			SolveIslands(start, end, dt,iterations);
 			});
 	}
-	
 	RunTask(islands.size(), [this, &dt](uint32_t start, uint32_t end, uint32_t threadNum) {
 		UpdateMovement(start, end, dt, 1);
 		});
@@ -135,11 +129,6 @@ void EpsilonWorld::PreFiltering(float dt)
 		if (!bodyList[i].isStatic) {
 			dynamicBodyList.push_back(i);
 		}
-		/*if (bodyList[i].sleepTimer > 1.0f) {
-
-			bodyList[i].sleepTimer = 0.0f;
-			bodyList[i].isSleeping = true;
-		}*/
 	}
 }
 void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
@@ -173,7 +162,6 @@ void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
 						localPotential,
 						bodyList
 					);
-
 					for (int other : localPotential)
 					{
 						if (dynIdx <= other) continue;
@@ -196,28 +184,10 @@ void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
 		}
 }
 
-void EpsilonWorld::WarmStart(int start, int end)
-{
-	for (int i = 0; i < allManifolds.size(); i++) {
-		CollisionManifold& manifold = allManifolds[i];
-			for (int j = 0; j < manifold.prevImp.size(); j++) {
-				manifold.bodyA.linearVelocity += -manifold.prevImp[j] * manifold.bodyA.inverseMass;
-				manifold.bodyB.linearVelocity += manifold.prevImp[j] * manifold.bodyB.inverseMass;
-			}
-			for (int j = 0; j < manifold.prevAngImp.size(); j++) {
-
-				manifold.bodyA.angularVelocity += -manifold.prevAngImp[j] * manifold.bodyA.inverseInertia;
-				manifold.bodyB.angularVelocity += manifold.prevAngImp[j] * manifold.bodyB.inverseInertia;
-			}
-		
-	}
-	allManifolds.clear();
-}
-
-void EpsilonWorld::NarrowPhase(int start, int end) {
+void EpsilonWorld::NarrowPhase(int start, int end, float dt) {
 	//ZoneScoped;
 	const uint32_t numTasks = scheduler.GetNumTaskThreads() + 1;
-	vector<vector<CollisionManifold>> manifolds(numTasks);
+	vector<vector<pair<vector<int>,CollisionManifold>>> pairs(numTasks);
 	enki::TaskSet task(
 		contactPairs.size(),
 		[&](enki::TaskSetPartition range, uint32_t threadnum)
@@ -240,11 +210,37 @@ void EpsilonWorld::NarrowPhase(int start, int end) {
 					int contactCount = 0;
 					Collisions::FindContactPoints(bodyA, bodyB, contact1, contact2, contactCount);
 					CollisionManifold contact(bodyA, bodyB, contact1, contact2, normal, depth, contactCount);
-					
+
+					auto it = prevManifolds.find(t);
+					vector<EpsilonVector> contactList = { contact1,contact2 };
+					if (it != prevManifolds.end()) {
+						CollisionManifold& oldManifold = it->second;
+						if (Collisions::NearlyEqual(oldManifold.contact1, contact.contact1) && Collisions::NearlyEqual(oldManifold.contact2, contact.contact2)) {
+							for (int i = 0; i < contactList.size(); i++) {
+								contact.deltaTime = dt;
+								float dtRatio =0;
+								if(oldManifold.deltaTime!=0) dtRatio = dt / oldManifold.deltaTime;
+								contact.accumulatedNormalImpulse[i] = oldManifold.accumulatedNormalImpulse[i] * dtRatio;
+								contact.accumulatedTangentImpulse[i] = oldManifold.accumulatedTangentImpulse[i] * dtRatio;
+								contact.bodyA.linearVelocity += -oldManifold.accumulatedNormalImpulse[i] * oldManifold.bodyA.inverseMass;
+								contact.bodyB.linearVelocity += oldManifold.accumulatedNormalImpulse[i] * oldManifold.bodyB.inverseMass;
+								contact.bodyA.linearVelocity += -oldManifold.accumulatedTangentImpulse[i] * oldManifold.bodyA.inverseMass;
+								contact.bodyB.linearVelocity += oldManifold.accumulatedTangentImpulse[i] * oldManifold.bodyB.inverseMass;
+								EpsilonVector ra = contactList[i] - bodyA.position;
+								EpsilonVector rb = contactList[i] - bodyB.position;
+								contact.bodyA.linearVelocity += -ra.Cross(oldManifold.accumulatedNormalImpulse[i]) * oldManifold.bodyA.inverseInertia;
+								contact.bodyB.linearVelocity += rb.Cross(oldManifold.accumulatedNormalImpulse[i]) * oldManifold.bodyB.inverseInertia;
+								contact.bodyA.linearVelocity += -ra.Cross(oldManifold.accumulatedTangentImpulse[i]) * oldManifold.bodyA.inverseInertia;
+								contact.bodyB.linearVelocity += rb.Cross(oldManifold.accumulatedTangentImpulse[i]) * oldManifold.bodyB.inverseInertia;
+							}
+							
+						}
+						
+					}
 					for (int i = 0; i < 15; i++) {
 						ResolveCollisonWithRotationAndFriction(contact);
 					}
-					manifolds[threadnum].emplace_back(contact);
+					pairs[threadnum].emplace_back(make_pair(t, contact));
 				}
 
 
@@ -252,9 +248,10 @@ void EpsilonWorld::NarrowPhase(int start, int end) {
 		});
 	scheduler.AddTaskSetToPipe(&task);
 	scheduler.WaitforTask(&task);
-	for (auto& v : manifolds) {
+	prevManifolds.clear();
+	for (auto& v : pairs) {
 		for (auto& p : v) {
-			allManifolds.emplace_back(p);
+			prevManifolds.insert(p);
 		}
 	}
 }
@@ -263,13 +260,11 @@ void EpsilonWorld::BuildIslands()
 	int n = bodyList.size();
 	DSU dsu(n);
 
-	// 1. Collect all manifolds from threads
 	for (int i = 0; i < contactPairs.size();i++) {
 		if (bodyList[contactPairs[i][0]].isStatic || bodyList[contactPairs[i][1]].isStatic) continue;
 			dsu.unite(contactPairs[i][0], contactPairs[i][1]);
 	}
 
-	// 2. Map roots to Island objects
 	std::unordered_map<int, int> rootToIslandIdx;
 	islands.clear();
 
@@ -284,7 +279,6 @@ void EpsilonWorld::BuildIslands()
 		islands[rootToIslandIdx[root]].bodyIndices.push_back(i);
 	}
 
-	// 3. Distribute manifolds to islands
 }
 
 void EpsilonWorld::SolveIslands(int start, int end, float dt,int iterations)
@@ -293,37 +287,30 @@ void EpsilonWorld::SolveIslands(int start, int end, float dt,int iterations)
 	for (int i = start; i < end; ++i) {
 		Island& island = islands[i];
 		
-		// Check if every body in the island is sleeping
-		// --- INTEGRATE & SLEEP CHECK ---
 		float maxEnergy = 0.0f;
 		for (int bIdx : island.bodyIndices) {
 			EpsilonBody& b = bodyList[bIdx];
 			float energy = b.linearVelocity.LengthSquared()+(b.angularVelocity*b.angularVelocity);
 			if (energy > maxEnergy) maxEnergy = energy;
 		}
-		// 1. Start by assuming the island CAN sleep
 		int sleep = 1;
-		float sleepDelay = 0.75f; // The object must be still for this many seconds
+		float sleepDelay = 2.f;
 
-		if (maxEnergy < 1.f) {
+		if (maxEnergy < .1f) {
 			for (int bIdx : island.bodyIndices) {
 				bodyList[bIdx].sleepTimer += dt/iterations;
-				// VETO: If any body has a timer lower than the delay, 
-				// it's too "new" or "active" to sleep.
 				if (bodyList[bIdx].sleepTimer < sleepDelay) {
 					sleep = -1;
 				}
 			}
 		}
 		else {
-			// Energy is too high; nobody sleeps.
 			sleep = -1;
 			for (int bIdx : island.bodyIndices) {
 				bodyList[bIdx].sleepTimer = 0.0f;
 			}
 		}
 
-		// 2. Final State Application
 		if (sleep == 1) {
 			island.isAsleep = true;
 			for (int bIdx : island.bodyIndices) {
@@ -332,12 +319,9 @@ void EpsilonWorld::SolveIslands(int start, int end, float dt,int iterations)
 		}
 		else if (sleep == -1) {
 			island.isAsleep = false;
-
-			// Only wake them up if energy is actually high
-			// This prevents "flickering" while they are settling			
-				for (int bIdx : island.bodyIndices) {
-					bodyList[bIdx].isSleeping = false;
-				}
+			for (int bIdx : island.bodyIndices) {
+				bodyList[bIdx].isSleeping = false;
+			}
 		}
 	}
 }
@@ -470,9 +454,10 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 			(raPerpDotN * raPerpDotN * bodyA.inverseInertia) +
 			(rbPerpDotN * rbPerpDotN * bodyB.inverseInertia);
 		j /= denom;
-		j /= (float)contactCount;
 		jList[i] = j;
-		EpsilonVector impulse = j * normal;
+		float oldImp = manifold.accumulatedNormalImpulse[i];
+		manifold.accumulatedNormalImpulse[i] = max(0.0f,oldImp-j);
+		EpsilonVector impulse = (oldImp+j) * normal;
 		impulseList[i] = impulse;
 	}
 	for (size_t i = 0; i < contactCount; i++) {
@@ -483,8 +468,9 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyA.angularVelocity += -ra.Cross(impulse) * bodyA.inverseInertia;
 		bodyB.linearVelocity += impulse * bodyB.inverseMass;
 		bodyB.angularVelocity += rb.Cross(impulse) * bodyB.inverseInertia;
-		manifold.prevImp.push_back(impulse);
-		manifold.prevAngImp.push_back(ra.Cross(impulse));
+		manifold.prevImp += impulse;
+		manifold.prevAngImpA += ra.Cross(impulse);
+		manifold.prevAngImpB += rb.Cross(impulse);
 	}
 	for (size_t i = 0; i < contactCount; i++) {
 		EpsilonVector ra = contactList[i] - bodyA.position;
@@ -510,14 +496,17 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 			((raPerpDotT * raPerpDotT) * bodyA.inverseInertia) +
 			((rbPerpDotT * rbPerpDotT) * bodyB.inverseInertia);
 		jt /= denom;
-		//jt /= (float)contactCount;
 		EpsilonVector frictionImpulse;
 		float j = jList[i];
+		EpsilonVector oldTangImp = manifold.accumulatedTangentImpulse[i];
+		float maxF = manifold.accumulatedNormalImpulse[i] * df;
 		if (abs(jt) <= j * sf) {
-			frictionImpulse = jt * tangent;
+			manifold.accumulatedTangentImpulse[i] = jt * tangent;
+			frictionImpulse = (jt * tangent+oldTangImp);
 		}
 		else {
-			frictionImpulse = -j * tangent * df;
+			manifold.accumulatedTangentImpulse[i] = -j * tangent * df;
+			frictionImpulse = ( - j * tangent * df + oldTangImp);
 		}
 		frictionImpulseList[i] = frictionImpulse;
 	}
@@ -529,6 +518,9 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyA.angularVelocity += -ra.Cross(frictionImpulse) * bodyA.inverseInertia;
 		bodyB.linearVelocity += frictionImpulse * bodyB.inverseMass;
 		bodyB.angularVelocity += rb.Cross(frictionImpulse) * bodyB.inverseInertia;
+		manifold.prevImp += frictionImpulse;
+		manifold.prevAngImpA += ra.Cross(frictionImpulse);
+		manifold.prevAngImpB += rb.Cross(frictionImpulse);
 	}
 }
 void EpsilonWorld::ZoZoResolveCollisonBasic(CollisionManifold& manifold)

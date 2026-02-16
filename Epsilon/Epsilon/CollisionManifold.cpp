@@ -7,6 +7,9 @@ CollisionManifold::CollisionManifold(EpsilonBody& bA, EpsilonBody& bB, EpsilonVe
 	contact2(c2),
 	normal(n),
 	depth(d),
-	contactCount(cCount)
+	contactCount(cCount),
+	accumulatedNormalImpulse(2),
+	accumulatedTangentImpulse(2),
+	deltaTime(0)
 {
 }
