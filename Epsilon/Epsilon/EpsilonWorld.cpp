@@ -89,7 +89,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 		contactPairs.clear();
 		islands.clear();
 		BroadPhase(windowWidth, windowHeight, zoom);
-		NarrowPhase(0,0,dt);	
+		NarrowPhase(0,0);	
 		BuildIslands();
 		RunTask(islands.size(), [this, &dt,iterations](uint32_t start, uint32_t end, uint32_t threadNum) {
 			SolveIslands(start, end, dt,iterations);
@@ -113,7 +113,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 }
 
 
-void EpsilonWorld::SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv, float depth) {
+void EpsilonWorld::SeparateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv, float depth) {
 	float slop = 0.01f;
 	float percent = 0.2f;
 	float totalInvMass = bodyA.inverseMass + bodyB.inverseMass;
@@ -184,7 +184,7 @@ void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
 		}
 }
 
-void EpsilonWorld::NarrowPhase(int start, int end, float dt) {
+void EpsilonWorld::NarrowPhase(int start, int end) {
 	//ZoneScoped;
 	const uint32_t numTasks = scheduler.GetNumTaskThreads() + 1;
 	vector<vector<pair<vector<int>,CollisionManifold>>> pairs(numTasks);
@@ -202,9 +202,9 @@ void EpsilonWorld::NarrowPhase(int start, int end, float dt) {
 				if (Collisions::Collide(bodyA, bodyB, normal, depth)) {
 					bodyB.isSleeping = false;
 					bodyA.isSleeping = false;
-					for (int i = 0; i < 3; i++) {
-						SeperateBodies(bodyA, bodyB, normal * depth, depth);
-					}
+					
+						SeparateBodies(bodyA, bodyB, normal * depth, depth);
+					
 					EpsilonVector contact1(0, 0);
 					EpsilonVector contact2(0, 0);
 					int contactCount = 0;
@@ -217,30 +217,33 @@ void EpsilonWorld::NarrowPhase(int start, int end, float dt) {
 						CollisionManifold& oldManifold = it->second;
 						if (Collisions::NearlyEqual(oldManifold.contact1, contact.contact1) && Collisions::NearlyEqual(oldManifold.contact2, contact.contact2)) {
 							for (int i = 0; i < contactList.size(); i++) {
-								contact.deltaTime = dt;
-								float dtRatio =0;
-								if(oldManifold.deltaTime!=0) dtRatio = dt / oldManifold.deltaTime;
-								contact.accumulatedNormalImpulse[i] = oldManifold.accumulatedNormalImpulse[i] * dtRatio;
-								contact.accumulatedTangentImpulse[i] = oldManifold.accumulatedTangentImpulse[i] * dtRatio;
-								contact.bodyA.linearVelocity += -oldManifold.accumulatedNormalImpulse[i] * oldManifold.bodyA.inverseMass;
-								contact.bodyB.linearVelocity += oldManifold.accumulatedNormalImpulse[i] * oldManifold.bodyB.inverseMass;
-								contact.bodyA.linearVelocity += -oldManifold.accumulatedTangentImpulse[i] * oldManifold.bodyA.inverseMass;
-								contact.bodyB.linearVelocity += oldManifold.accumulatedTangentImpulse[i] * oldManifold.bodyB.inverseMass;
+								contact.accumulatedNormalImpulse[i] = oldManifold.accumulatedNormalImpulse[i];
+								contact.accumulatedTangentImpulse[i] = oldManifold.accumulatedTangentImpulse[i];
+								contact.tangentList[i] = oldManifold.tangentList[i];
+								contact.bodyA.linearVelocity += -oldManifold.accumulatedNormalImpulse[i] * contact.bodyA.inverseMass*contact.normal;
+								contact.bodyB.linearVelocity += oldManifold.accumulatedNormalImpulse[i] * contact.bodyB.inverseMass * contact.normal;
+								contact.bodyA.linearVelocity += -oldManifold.accumulatedTangentImpulse[i] * contact.bodyA.inverseMass* contact.tangentList[i];
+								contact.bodyB.linearVelocity += oldManifold.accumulatedTangentImpulse[i] * contact.bodyB.inverseMass * contact.tangentList[i];
 								EpsilonVector ra = contactList[i] - bodyA.position;
 								EpsilonVector rb = contactList[i] - bodyB.position;
-								contact.bodyA.linearVelocity += -ra.Cross(oldManifold.accumulatedNormalImpulse[i]) * oldManifold.bodyA.inverseInertia;
-								contact.bodyB.linearVelocity += rb.Cross(oldManifold.accumulatedNormalImpulse[i]) * oldManifold.bodyB.inverseInertia;
-								contact.bodyA.linearVelocity += -ra.Cross(oldManifold.accumulatedTangentImpulse[i]) * oldManifold.bodyA.inverseInertia;
-								contact.bodyB.linearVelocity += rb.Cross(oldManifold.accumulatedTangentImpulse[i]) * oldManifold.bodyB.inverseInertia;
+								contact.bodyA.angularVelocity += -ra.Cross(oldManifold.accumulatedNormalImpulse[i]* contact.normal) * contact.bodyA.inverseInertia;
+								contact.bodyB.angularVelocity += rb.Cross(oldManifold.accumulatedNormalImpulse[i] * contact.normal) * contact.bodyB.inverseInertia;
+								contact.bodyA.angularVelocity += -ra.Cross(oldManifold.accumulatedTangentImpulse[i] * contact.tangentList[i]) * contact.bodyA.inverseInertia ;
+								contact.bodyB.angularVelocity += rb.Cross(oldManifold.accumulatedTangentImpulse[i] * contact.tangentList[i]) * contact.bodyB.inverseInertia ;
 							}
+							
+								
 							
 						}
 						
 					}
-					for (int i = 0; i < 15; i++) {
-						ResolveCollisonWithRotationAndFriction(contact);
-					}
-					pairs[threadnum].emplace_back(make_pair(t, contact));
+					
+						pairs[threadnum].emplace_back(make_pair(t, contact));
+						
+							
+						
+					
+					ResolveCollisonWithRotationAndFriction(contact);
 				}
 
 
@@ -296,7 +299,7 @@ void EpsilonWorld::SolveIslands(int start, int end, float dt,int iterations)
 		int sleep = 1;
 		float sleepDelay = 2.f;
 
-		if (maxEnergy < .1f) {
+		if (maxEnergy < 2.f) {
 			for (int bIdx : island.bodyIndices) {
 				bodyList[bIdx].sleepTimer += dt/iterations;
 				if (bodyList[bIdx].sleepTimer < sleepDelay) {
@@ -371,7 +374,7 @@ void EpsilonWorld::ResolveCollisonWithRotation(CollisionManifold& manifold)
 	EpsilonVector contact1 = manifold.contact1;
 	EpsilonVector contact2 = manifold.contact2;
 	int contactCount = manifold.contactCount;
-	float e = min(bodyA.restitution, bodyB.restitution);
+	float e = max(bodyA.restitution, bodyB.restitution);
 	vector<EpsilonVector> contactList = { contact1,contact2 };
 	vector<EpsilonVector> impulseList(2);
 	vector<EpsilonVector> raList(2);
@@ -385,7 +388,7 @@ void EpsilonWorld::ResolveCollisonWithRotation(CollisionManifold& manifold)
 		EpsilonVector rbPerp(-rb.y, rb.x);
 		EpsilonVector angularLinearVelocityA = raPerp * bodyA.angularVelocity;
 		EpsilonVector angularLinearVelocityB = rbPerp * bodyB.angularVelocity;
-		EpsilonVector relativeVelocity = (bodyB.linearVelocity+angularLinearVelocityB) - (bodyA.linearVelocity+angularLinearVelocityA);
+		EpsilonVector relativeVelocity = (bodyB.linearVelocity + angularLinearVelocityB) - (bodyA.linearVelocity + angularLinearVelocityA);
 		float contactVelocityMag = relativeVelocity.Dot(normal);
 		if (contactVelocityMag > 0.f) {
 			continue;
@@ -393,8 +396,8 @@ void EpsilonWorld::ResolveCollisonWithRotation(CollisionManifold& manifold)
 		float j = -(1 + e) * contactVelocityMag;
 		float raPerpDotN = raPerp.Dot(normal);
 		float rbPerpDotN = rbPerp.Dot(normal);
-		float denom = bodyA.inverseMass + bodyB.inverseMass + 
-			(raPerpDotN*raPerpDotN)*bodyA.inverseInertia + 
+		float denom = bodyA.inverseMass + bodyB.inverseMass +
+			(raPerpDotN * raPerpDotN) * bodyA.inverseInertia +
 			(rbPerpDotN * rbPerpDotN) * bodyB.inverseInertia;
 		j /= denom;
 		j /= (float)contactCount;
@@ -439,12 +442,11 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		EpsilonVector rbPerp(-rb.y, rb.x);
 		EpsilonVector angularLinearVelocityA = raPerp * bodyA.angularVelocity;
 		EpsilonVector angularLinearVelocityB = rbPerp * bodyB.angularVelocity;
+		
 		EpsilonVector relativeVelocity = (bodyB.linearVelocity + angularLinearVelocityB) - (bodyA.linearVelocity + angularLinearVelocityA);
 		float contactVelocityMag = relativeVelocity.Dot(normal);
-		if (contactVelocityMag > 0.f) {
-			continue;
-		}
-		if (contactVelocityMag > -0.5f) {
+		
+		if (abs(contactVelocityMag) < 0.5f) {
 			e = 0.0f;
 		}
 		float j = -(1 + e) * contactVelocityMag;
@@ -454,10 +456,11 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 			(raPerpDotN * raPerpDotN * bodyA.inverseInertia) +
 			(rbPerpDotN * rbPerpDotN * bodyB.inverseInertia);
 		j /= denom;
+		j /= (float)contactCount;
 		jList[i] = j;
 		float oldImp = manifold.accumulatedNormalImpulse[i];
-		manifold.accumulatedNormalImpulse[i] = max(0.0f,oldImp-j);
-		EpsilonVector impulse = (oldImp+j) * normal;
+		manifold.accumulatedNormalImpulse[i] = max(0.0f,oldImp+j);
+		EpsilonVector impulse = (manifold.accumulatedNormalImpulse[i] - oldImp) * normal;
 		impulseList[i] = impulse;
 	}
 	for (size_t i = 0; i < contactCount; i++) {
@@ -468,9 +471,6 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyA.angularVelocity += -ra.Cross(impulse) * bodyA.inverseInertia;
 		bodyB.linearVelocity += impulse * bodyB.inverseMass;
 		bodyB.angularVelocity += rb.Cross(impulse) * bodyB.inverseInertia;
-		manifold.prevImp += impulse;
-		manifold.prevAngImpA += ra.Cross(impulse);
-		manifold.prevAngImpB += rb.Cross(impulse);
 	}
 	for (size_t i = 0; i < contactCount; i++) {
 		EpsilonVector ra = contactList[i] - bodyA.position;
@@ -483,32 +483,28 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		EpsilonVector angularLinearVelocityB = rbPerp * bodyB.angularVelocity;
 		EpsilonVector relativeVelocity = (bodyB.linearVelocity + angularLinearVelocityB) - (bodyA.linearVelocity + angularLinearVelocityA);
 		EpsilonVector tangent = relativeVelocity - relativeVelocity.Dot(normal) * normal;
-		if (Collisions::NearlyEqual(tangent, EpsilonVector(0, 0))) {
-			continue;
-		}
-		else {
+		
 			tangent = tangent.Normalized();
-		}
+		
 		float jt = -relativeVelocity.Dot(tangent);
 		float raPerpDotT = raPerp.Dot(tangent);
 		float rbPerpDotT = rbPerp.Dot(tangent);
 		float denom = (bodyA.inverseMass + bodyB.inverseMass) +
 			((raPerpDotT * raPerpDotT) * bodyA.inverseInertia) +
 			((rbPerpDotT * rbPerpDotT) * bodyB.inverseInertia);
+
 		jt /= denom;
+		jt /= (float)contactCount;
 		EpsilonVector frictionImpulse;
 		float j = jList[i];
-		EpsilonVector oldTangImp = manifold.accumulatedTangentImpulse[i];
-		float maxF = manifold.accumulatedNormalImpulse[i] * df;
-		if (abs(jt) <= j * sf) {
-			manifold.accumulatedTangentImpulse[i] = jt * tangent;
-			frictionImpulse = (jt * tangent+oldTangImp);
-		}
-		else {
-			manifold.accumulatedTangentImpulse[i] = -j * tangent * df;
-			frictionImpulse = ( - j * tangent * df + oldTangImp);
-		}
+		jt = clamp(jt, -abs(j * sf), abs(j * sf));
+		float oldTangImp = manifold.accumulatedTangentImpulse[i];
+		float maxF = manifold.accumulatedNormalImpulse[i] * sf;
+		
+		manifold.accumulatedTangentImpulse[i] = clamp(oldTangImp + jt, -maxF, maxF);
+		frictionImpulse = (manifold.accumulatedTangentImpulse[i]-oldTangImp) * tangent;
 		frictionImpulseList[i] = frictionImpulse;
+		
 	}
 	for (size_t i = 0; i < contactCount; i++) {
 		EpsilonVector ra = raList[i];
@@ -518,9 +514,6 @@ void EpsilonWorld::ResolveCollisonWithRotationAndFriction(CollisionManifold& man
 		bodyA.angularVelocity += -ra.Cross(frictionImpulse) * bodyA.inverseInertia;
 		bodyB.linearVelocity += frictionImpulse * bodyB.inverseMass;
 		bodyB.angularVelocity += rb.Cross(frictionImpulse) * bodyB.inverseInertia;
-		manifold.prevImp += frictionImpulse;
-		manifold.prevAngImpA += ra.Cross(frictionImpulse);
-		manifold.prevAngImpB += rb.Cross(frictionImpulse);
 	}
 }
 void EpsilonWorld::ZoZoResolveCollisonBasic(CollisionManifold& manifold)

@@ -212,13 +212,14 @@ void EpsilonBody::CreateConnection(EpsilonVector origin) {
 void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations)
 {
 	dt /= iterations;
+	position += linearVelocity * dt;
 	EpsilonVector acceleration = force * inverseMass;
 	acceleration += gravity;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
 	linearVelocity += acceleration*dt;
 	angle += angularVelocity * dt;
-	position += linearVelocity * dt;
+	position += (acceleration*dt*dt)/2.f;
 	if (connectiontype != none) {
 		if (shapetype == box) {
 			EpsilonVector offset(0, -height / 2.f);

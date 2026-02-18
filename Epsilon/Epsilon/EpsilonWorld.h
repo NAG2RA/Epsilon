@@ -149,9 +149,9 @@ private:
 	map<vector<int>, CollisionManifold> prevManifolds;
 	void PreFiltering(float dt);
 	void UpdateMovement(uint32_t start, uint32_t end, float dt, int iterations);
-	void SeperateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv,float depth);
+	void SeparateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv,float depth);
 	void BroadPhase(int windowWidth = 1280, int windowHeight = 720, float zoom = 1.f);
-	void NarrowPhase(int start, int end,float dt);
+	void NarrowPhase(int start, int end);
 	void BuildIslands();
 	void SolveIslands(int start, int end,float dt, int iterations);
 	void ResolveCollisonBasic(CollisionManifold& manifold);
@@ -161,6 +161,7 @@ private:
 	void ResolveThreadConnection(int start, int end);
 	void ResolveSpringConnection(int start, int end,float dt, int iterations);
 	void Buoyancy(int start, int end);
+	
 	void AirResistance(int start, int end, float dt, int iterations);
 
 };

@@ -39,6 +39,33 @@ string loadShaderSrc(const char* filename) {
 
     return ret;
 }
+void UnitTestVector()
+{
+    EpsilonVector a(5, 4);
+    EpsilonVector b(12, -37);
+    EpsilonVector zero(0,0);
+    assert((a + b).x == 17 && (a + b).y == -33 && (a - b).x == -7 && (a - b).y == 41 && (a.Dot(b)) == -88 && (a.Cross(b)) == -233
+        && !isnan(zero.Normalized().x) && !isnan(zero.Normalized().y));
+}
+
+void UnitTestAABB()
+{
+    AABB a(EpsilonVector(0,0), EpsilonVector(2, 2));
+    AABB b(EpsilonVector(1, 1), EpsilonVector(3, 3));
+    AABB c(EpsilonVector(0, 0), EpsilonVector(1, 1));
+    AABB d(EpsilonVector(1, 0), EpsilonVector(2, 1));
+    assert(Collisions::IntersectAABB(a, b) && Collisions::IntersectAABB(c, d));
+
+}
+
+void UnitTestUpdateMovement() {
+    EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, none);
+    float dt = 1.0f;
+    EpsilonVector gravity(0, 9.8f);
+    bd.updateMovement(dt, gravity, 1);
+    assert(Collisions::NearlyEqual(bd.position.y, 4.9f));
+
+}
 class Renderer {
 public:
     unsigned int shaderProgram;
@@ -478,11 +505,15 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
 }
 int main() {
     Renderer renderer;
-    
+    UnitTestVector();
+    UnitTestAABB();
+    UnitTestUpdateMovement();
     srand(time(0));
     bool ispressed = false;
     int contype = 0;
     float timer = 0.02f;
+    float fixedDt = 1 / 60.f;
+    float accumulator = 0;
     EpsilonVector origin;  
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -504,7 +535,7 @@ int main() {
         glfwTerminate();
     }
     glfwMakeContextCurrent(windowGL);
-
+    
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         cout << "Failed to initialize GLAD" << endl;
         glfwTerminate();
@@ -522,8 +553,8 @@ int main() {
         lastFrame = currentFrame;
         renderer.Render(world, width, height, zoom);
         InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
-        world.Update(deltaTime, 1);
-
+        world.Update(deltaTime, 6);
+        
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
         //FrameMark;
