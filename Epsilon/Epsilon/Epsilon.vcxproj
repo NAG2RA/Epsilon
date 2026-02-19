@@ -25,10 +25,13 @@
     <ClCompile Include="CollisionManifold.cpp" />
     <ClCompile Include="Collisions.cpp" />
     <ClCompile Include="EpsilonBody.cpp" />
+    <ClCompile Include="EpsilonInputs.cpp" />
+    <ClCompile Include="EpsilonRenderer.cpp" />
     <ClCompile Include="EpsilonVector.cpp" />
     <ClCompile Include="EpsilonWorld.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="UnitTests.cpp" />
     <ClCompile Include="Water.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -36,8 +39,11 @@
     <ClInclude Include="CollisionManifold.h" />
     <ClInclude Include="Collisions.h" />
     <ClInclude Include="EpsilonBody.h" />
+    <ClInclude Include="EpsilonInputs.h" />
+    <ClInclude Include="EpsilonRenderer.h" />
     <ClInclude Include="EpsilonVector.h" />
     <ClInclude Include="EpsilonWorld.h" />
+    <ClInclude Include="UnitTests.h" />
     <ClInclude Include="Water.h" />
   </ItemGroup>
   <ItemGroup>
