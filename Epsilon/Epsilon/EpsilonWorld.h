@@ -4,6 +4,7 @@
 #include<condition_variable>
 #include<Tracy.hpp>
 #include<enkiTS/TaskScheduler.h>
+#include<algorithm>
 #include<map>
 #include"EpsilonBody.h"
 #include"Collisions.h"

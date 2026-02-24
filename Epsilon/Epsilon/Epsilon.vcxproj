@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Users\aliks\Downloads\enkiTS-master\enkiTS-master\src\TaskScheduler.cpp" />
-    <ClCompile Include="..\tracy\public\TracyClient.cpp" />
+    <ClCompile Include="..\External\include\enkiTS\TaskScheduler.cpp" />
+    <ClCompile Include="..\External\tracy\public\TracyClient.cpp" />
     <ClCompile Include="AABB.cpp" />
     <ClCompile Include="CollisionManifold.cpp" />
     <ClCompile Include="Collisions.cpp" />
@@ -150,7 +150,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;TRACY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\include;$(SolutionDir)tracy\public\tracy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\include;$(SolutionDir)External\tracy\public\tracy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
@@ -170,7 +170,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;TRACY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\include;$(SolutionDir)tracy\public\tracy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\include;$(SolutionDir)External\tracy\public\tracy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MaxSpeed</Optimization>
       <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>

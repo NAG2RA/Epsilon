@@ -42,12 +42,6 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\tracy\public\TracyClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Users\aliks\Downloads\enkiTS-master\enkiTS-master\src\TaskScheduler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EpsilonRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -55,6 +49,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UnitTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\include\enkiTS\TaskScheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\tracy\public\TracyClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
