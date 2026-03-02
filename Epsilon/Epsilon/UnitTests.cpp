@@ -94,7 +94,7 @@ void UnitTestAABB()
 
 void UnitTestUpdateMovement() {
     {
-        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, none);
+        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, false, none);
         float dt = 1.0f;
         EpsilonVector gravity(0, 9.8f);
         bd.updateMovement(dt, gravity, 1);
@@ -102,7 +102,7 @@ void UnitTestUpdateMovement() {
     }
 
     {
-        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, none);
+        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, false, none);
         float dt = 1e-8f;
         EpsilonVector gravity(0, 0);
         bd.linearVelocity.x = 10.f;
@@ -111,7 +111,7 @@ void UnitTestUpdateMovement() {
     }
 
     {
-        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, none);
+        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, false, none);
         float dt = 5.f;
         EpsilonVector gravity(0, 9.8f);
         bd.linearVelocity = EpsilonVector(10,10);
@@ -120,7 +120,7 @@ void UnitTestUpdateMovement() {
     }
 
     {
-        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, none);
+        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, false, none);
         float dt = 1.f;
         EpsilonVector gravity(0, 0);
         bd.linearVelocity = EpsilonVector(3, 4);
@@ -129,7 +129,7 @@ void UnitTestUpdateMovement() {
     }
 
     {
-        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, none);
+        EpsilonBody bd = EpsilonBody::CreateBoxBody(EpsilonVector(0, 0), 0.7f, 0.5f, 4, 4, false, false, none);
         float dt = 0.f;
         EpsilonVector gravity(0, 9.8f);
         bd.linearVelocity = EpsilonVector(3, 4);

@@ -19,32 +19,36 @@ enum Connectiontype {
 class EpsilonBody
 {
 public:
-	bool isLocked;
+	bool usingCCD;
 	float angle, angularVelocity, inverseMass, connectionDistance;
 	float density, mass, restitution, area, radius, width, height, inertia, inverseInertia, dynamicFriction, staticFriction;
 	bool isStatic;
 	bool isSleeping;
 	float sleepTimer;
+	float deltaTime;
+	EpsilonVector grav;
+	EpsilonVector acceleration;
 	vector<int> collisions;
 	EpsilonVector position, linearVelocity, force, originPosition, connectionPosition;
 	AABB aabb;
+	AABB ccdAABB;
 	Shapetype shapetype;
 	Connectiontype connectiontype;
 	bool isTransformUpdated;
 	bool isAABBUpdated;
 	EpsilonBody(EpsilonVector position, float density, float mass, float inertia, float restitution, float area, float radius, float width,
-		float height,vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype, Connectiontype connectiontype);
+		float height,vector<EpsilonVector> vertices, bool isStatic, bool usingCCD, Shapetype shapetype, Connectiontype connectiontype);
 	static EpsilonBody CreateNewBody(EpsilonBody body);
-	static EpsilonBody CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic, Connectiontype connectiontype);
-	static EpsilonBody CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, Connectiontype connectiontype);
-	static EpsilonBody CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, Connectiontype connectiontype);
+	static EpsilonBody CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic, bool usingCCD, Connectiontype connectiontype);
+	static EpsilonBody CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, bool usingCCD, Connectiontype connectiontype);
+	static EpsilonBody CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, bool usingCCD, Connectiontype connectiontype);
 	void CreateConnection(EpsilonVector origin);
 	void updateMovement(float dt, EpsilonVector gravity,int iterations);
 	void Move(EpsilonVector amount);
 	vector<EpsilonVector> GetTransformedVertices();
 	void MoveTo(EpsilonVector& pos);
 	void AddForce(EpsilonVector amount);
-	AABB GetAABB();
+	AABB GetAABB(bool isCCD = 0);
 	EpsilonVector Transform(EpsilonVector position, EpsilonVector endposition, float angle);
 private:
 	static vector<EpsilonVector> GetBoxVertices(float width, float height);

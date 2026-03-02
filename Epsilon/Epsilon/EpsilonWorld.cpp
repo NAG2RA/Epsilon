@@ -18,7 +18,7 @@ void EpsilonWorld::RunTask(uint32_t count, std::function<void(uint32_t, uint32_t
 EpsilonWorld::EpsilonWorld(int windowWidth, int windowHeight, float zoom)
 	:depth(0),
 	normal(0,0),
-	gravity(0,9.81f),
+	gravity(0,9.8f),
 	springConstant(20),
 	damperConstant(1),
 	damperThreadConstant(2),
@@ -89,12 +89,13 @@ void EpsilonWorld::Update(float dt, int iterations)
 		contactPairs.clear();
 		islands.clear();
 		BroadPhase(windowWidth, windowHeight, zoom);
-		NarrowPhase(0,0);	
+		NarrowPhase(0,0,dt);	
 		BuildIslands();
 		RunTask(islands.size(), [this, &dt,iterations](uint32_t start, uint32_t end, uint32_t threadNum) {
 			SolveIslands(start, end, dt,iterations);
 			});
 	}
+	resolveCCDCollisions(dt, iterations);
 	RunTask(islands.size(), [this, &dt](uint32_t start, uint32_t end, uint32_t threadNum) {
 		UpdateMovement(start, end, dt, 1);
 		});
@@ -110,6 +111,7 @@ void EpsilonWorld::Update(float dt, int iterations)
 	RunTask(islands.size(), [this](uint32_t start, uint32_t end, uint32_t threadNum) {
 		Buoyancy(start,end);
 		});
+	
 }
 
 
@@ -128,6 +130,9 @@ void EpsilonWorld::PreFiltering(float dt)
 	for (int i = 0; i < bodyList.size(); i++) {
 		if (!bodyList[i].isStatic) {
 			dynamicBodyList.push_back(i);
+		}
+		if (bodyList[i].usingCCD) {
+			ccdBodies.push_back(i);
 		}
 	}
 }
@@ -158,7 +163,7 @@ void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
 
 					localPotential.clear();
 					qtree.query(
-						bodyList[dynIdx].GetAABB(),
+						bodyList[dynIdx].GetAABB(bodyList[dynIdx].usingCCD),
 						localPotential,
 						bodyList
 					);
@@ -184,7 +189,93 @@ void EpsilonWorld::BroadPhase(int windowWidth, int windowHeight, float zoom) {
 		}
 }
 
-void EpsilonWorld::NarrowPhase(int start, int end) {
+float EpsilonWorld::TimeOfImpact(float dt, EpsilonBody& A, EpsilonBody& B, float& depth, EpsilonVector& normal)
+{
+	if (!A.usingCCD && !B.usingCCD)
+        return dt;
+
+    EpsilonVector originalPosA = A.position;
+    EpsilonVector originalPosB = B.position;
+
+    EpsilonVector vRel = A.linearVelocity - B.linearVelocity;
+	EpsilonVector aRel = A.acceleration - B.acceleration;
+    float tMin = 0.0f;
+    float tMax = dt;
+
+	A.position = originalPosA + vRel * tMax + aRel * tMax * tMax * 0.5f;
+    B.position = originalPosB;
+	
+
+    for (int i = 0; i < 15; ++i)
+    {
+        float tMid = 0.5f * (tMin + tMax);
+
+        A.position = originalPosA + vRel * tMid + aRel * tMid * tMid * 0.5f;
+        B.position = originalPosB;
+
+        if (Collisions::Collide(A, B, normal, depth))
+            tMax = tMid;
+        else
+            tMin = tMid;
+    }
+
+    A.position = originalPosA;
+    B.position = originalPosB;
+
+    return tMax;
+
+}
+
+void EpsilonWorld::resolveCCDCollisions(float& dt, int iterations)
+{
+	float remaining = dt;
+	int maxSubSteps = 10;
+	for (int step = 0; step < maxSubSteps && remaining > 1e-4f; ++step) {
+		float minTOI = remaining;
+		vector<int> bestPair;
+		int indx =0;
+		float finalDepth = 0;
+		EpsilonVector finalNormal(0, 0);
+		for (int i =0; i<contactPairs.size();i++) {
+			float tempDepth = 0;
+			EpsilonVector tempNormal(0, 0);
+			vector<int> t = contactPairs[i];
+			float toi = TimeOfImpact(remaining, bodyList[t[0]], bodyList[t[1]], tempDepth, tempNormal);
+			if (toi < minTOI) {
+				
+				minTOI = toi;
+				bestPair = t;
+				indx = i;
+				finalDepth = tempDepth;
+				finalNormal = tempNormal;
+			}
+		}
+		if (bestPair.empty()) break;
+
+		for (int idx : dynamicBodyList) {
+			bodyList[idx].updateMovement(minTOI,gravity,iterations);
+		}
+		
+		EpsilonBody& bodyA = bodyList[bestPair[0]];
+		EpsilonBody& bodyB = bodyList[bestPair[1]];
+
+		EpsilonVector c1, c2;
+		int count = 0;
+		Collisions::FindContactPoints(bodyA, bodyB, c1, c2, count);
+
+		CollisionManifold manifold(bodyA, bodyB, c1, c2, finalNormal, finalDepth, count);
+		ResolveCollisonWithRotationAndFriction(manifold);
+		
+		bodyA.isSleeping = false;
+		bodyB.isSleeping = false;
+
+		remaining -= minTOI;
+		contactPairs.erase(contactPairs.begin() + indx);
+	}
+	dt = remaining;
+}
+
+void EpsilonWorld::NarrowPhase(int start, int end, float dt) {
 	//ZoneScoped;
 	const uint32_t numTasks = scheduler.GetNumTaskThreads() + 1;
 	vector<vector<pair<vector<int>,CollisionManifold>>> pairs(numTasks);

@@ -37,7 +37,7 @@ public:
 			se->query(area, found, list);
 		}
 		for (int i = 0; i < bodies.size(); i++) {
-			if (Collisions::IntersectAABB(area, list[bodies[i]].GetAABB())) {
+			if (Collisions::IntersectAABB(area, list[bodies[i]].GetAABB(list[bodies[i]].usingCCD))) {
 				found.push_back(bodies[i]);
 			}
 		}
@@ -45,7 +45,7 @@ public:
 
 	bool insert(EpsilonBody& body, vector<EpsilonBody>& list, int index) {
 
-		if (!Collisions::IntersectAABB(aabb, body.GetAABB())) {
+		if (!Collisions::IntersectAABB(aabb, body.GetAABB(body.usingCCD))) {
 			return false;
 		}
 
@@ -57,10 +57,10 @@ public:
 			subdivide(list);
 		}
 
-		if (Collisions::ContainsAABB(body.GetAABB(), nw->aabb)) return nw->insert(body, list, index);
-		if (Collisions::ContainsAABB(body.GetAABB(), ne->aabb)) return ne->insert(body, list, index);
-		if (Collisions::ContainsAABB(body.GetAABB(), sw->aabb)) return sw->insert(body, list, index);
-		if (Collisions::ContainsAABB(body.GetAABB(), se->aabb)) return se->insert(body, list, index);
+		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), nw->aabb)) return nw->insert(body, list, index);
+		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), ne->aabb)) return ne->insert(body, list, index);
+		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), sw->aabb)) return sw->insert(body, list, index);
+		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), se->aabb)) return se->insert(body, list, index);
 		bodies.push_back(index);
 		return true;
 	}
@@ -146,13 +146,16 @@ private:
 	vector<int> nonStaticBodies;
 	vector<vector<int>> contactPairs;
 	vector<int> potentialColliders;
+	vector<int> ccdBodies;
 	vector<Island> islands;
 	map<vector<int>, CollisionManifold> prevManifolds;
 	void PreFiltering(float dt);
 	void UpdateMovement(uint32_t start, uint32_t end, float dt, int iterations);
 	void SeparateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv,float depth);
 	void BroadPhase(int windowWidth = 1280, int windowHeight = 720, float zoom = 1.f);
-	void NarrowPhase(int start, int end);
+	float TimeOfImpact(float dt, EpsilonBody& A, EpsilonBody& B, float& depth, EpsilonVector& normal);
+	void resolveCCDCollisions(float& dt, int iterations);
+	void NarrowPhase(int start, int end,float dt);
 	void BuildIslands();
 	void SolveIslands(int start, int end,float dt, int iterations);
 	void ResolveCollisonBasic(CollisionManifold& manifold);

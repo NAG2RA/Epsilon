@@ -107,6 +107,29 @@ void EpsilonRenderer::Render(EpsilonWorld& world, int width, int height, float z
         }
         else if (world.GetBody(i).shapetype == box) {
             vector<EpsilonVector> v = world.GetBody(i).GetTransformedVertices();
+            
+            /*AABB a = world.GetBody(i).ccdAABB;
+
+            float aabbVertices[] = {
+              a.min.x, a.min.y, 0.0f,
+               a.max.x, a.min.y, 0.0f,
+                a.max.x, a.max.y, 0.0f,
+                a.min.x, a.max.y, 0.0f
+            };
+
+
+            int pointIndices[] = {
+                0,  1, 2,  3
+            };
+            glPointSize(5);
+           glUseProgram(shaderProgram);
+            glUniform4f(colorLoc, 0.0f, 0.0f, 1.0f, 1.0f);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(aabbVertices), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(aabbVertices), aabbVertices);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pointIndices), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(pointIndices), pointIndices);
+            glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, 0);*/
+            
             vector<float> vertices = {
 
                  v[3].x, v[3].y,0.0f,

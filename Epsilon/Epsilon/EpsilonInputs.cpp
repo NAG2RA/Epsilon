@@ -17,8 +17,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-
-                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 4, 4, false, none));
+                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 4, 4, false, false, none));
             }
             else if (contype == 1) {
                 double xpos, ypos;
@@ -29,7 +28,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false, spring);
+                EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false,false, spring);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -44,7 +43,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false, thr);
+                EpsilonBody body = EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 2, 2, false,false, thr);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -65,7 +64,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, none));
+                world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false,false, none));
             }
             else if (contype == 1) {
                 double xpos, ypos;
@@ -76,7 +75,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, spring);
+                EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, false, spring);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -90,7 +89,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, thr);
+                EpsilonBody body = EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 1, 1, false, false, thr);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -110,7 +109,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                world.AddBody(EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 2, false, none));
+                world.AddBody(EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 2, false, false, none));
             }
             else if (contype == 1) {
                 double xpos, ypos;
@@ -121,7 +120,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, spring);
+                EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, false, spring);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -135,7 +134,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, thr);
+                EpsilonBody body = EpsilonBody::CreateTriangleBody(EpsilonVector(spawnX, spawnY), 1, 0.5f, 2, false, false, thr);
                 body.CreateConnection(origin);
                 world.AddBody(body);
                 contype = 0;
@@ -193,7 +192,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
             float targetNDC_Y = mouseNDC_Y * zoom;
             float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
             float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-            world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 1, false, none));
+            world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 1, false, false, none));
             timer = 0.02f;
         }
     }

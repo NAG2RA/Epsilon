@@ -4,7 +4,7 @@ float maxArea = 64 * 64;
 float minDensity = 0.5f;
 float maxDensity = 21.4f;
 EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, float inertia, float restitution, float area, float radius, float width,
-	float height, vector<EpsilonVector> vertices, bool isStatic, Shapetype shapetype, Connectiontype connectiontype)
+	float height, vector<EpsilonVector> vertices, bool isStatic, bool usingCCD, Shapetype shapetype, Connectiontype connectiontype)
 	:position(position),
 
 	density(density),
@@ -12,7 +12,7 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	restitution(restitution),
 	area(area),
 	radius(radius),
-	isLocked(false),
+	usingCCD(usingCCD),
 	width(width),
 	height(height),
 	isStatic(isStatic),
@@ -23,8 +23,10 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	sleepTimer(0.0f),
 	angularVelocity(0.f),
 	linearVelocity(0, 0),
+	deltaTime(0),
 	force(0, 0),
 	aabb(0, 0, 0, 0),
+	ccdAABB(0,0,0,0),
 	inertia(inertia),
 	inverseMass(mass > 0 ? (float)1 / mass : 0),
 	inverseInertia(inertia > 0 ? (float)1 / inertia : 0),
@@ -61,6 +63,7 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 		EpsilonVector rotOffset = Transform(offset, position, angle);
 		connectionPosition = rotOffset;
 	}
+	GetAABB(1);
 	connectionPosition = position;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
@@ -68,10 +71,10 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody body)
 {
-	return EpsilonBody(body.position,body.density,body.mass, body.inertia, body.restitution,body.area,body.radius,body.width,body.height, body.vertices, body.isStatic,body.shapetype, body.connectiontype);
+	return EpsilonBody(body.position,body.density,body.mass, body.inertia, body.restitution,body.area,body.radius,body.width,body.height, body.vertices, body.isStatic,body.usingCCD, body.shapetype, body.connectiontype);
 }
 
-EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic,Connectiontype connectiontype)
+EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic, bool usingCCD, Connectiontype connectiontype)
 {
 	float area = radius * radius * 3.14f;
 	if (area < minArea) 
@@ -110,11 +113,11 @@ EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density,
 		mass = area * (float)density;
 		inertia = (1.f / 2.f) * mass * radius * radius;
 	}
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic, Shapetype::circle, connectiontype);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic,usingCCD, Shapetype::circle, connectiontype);
 	return bd;
 }
 
-EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, Connectiontype connectiontype)
+EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, bool usingCCD, Connectiontype connectiontype)
 {
 	
 	float area = width * height;
@@ -155,10 +158,10 @@ EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, fl
 		inertia = (1.f / 12.f) * mass * (width * width + height * height);
 	}
 	vector<EpsilonVector> vertices = GetBoxVertices(width,height);
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, width, height, vertices, isStatic, Shapetype::box, connectiontype);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, width, height, vertices, isStatic, usingCCD, Shapetype::box, connectiontype);
 	return bd;
 }
-EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, Connectiontype connectiontype)
+EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic,bool usingCCD, Connectiontype connectiontype)
 {
 	float area = (side*side*sqrt(3))/4;
 	if (area < minArea)
@@ -199,7 +202,7 @@ EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float densit
 		inertia = (1.f / 36.f)*side*height*height*height;
 	}
 	vector<EpsilonVector> vertices = GetTriangleVertices(side);
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, side, height, vertices, isStatic, Shapetype::triangle, connectiontype);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, side, height, vertices, isStatic, usingCCD, Shapetype::triangle, connectiontype);
 	return bd;
 }
 void EpsilonBody::CreateConnection(EpsilonVector origin) {
@@ -212,8 +215,10 @@ void EpsilonBody::CreateConnection(EpsilonVector origin) {
 void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations)
 {
 	dt /= iterations;
+	
+	deltaTime = dt;
 	position += linearVelocity * dt;
-	EpsilonVector acceleration = force * inverseMass;
+	acceleration = force * inverseMass;
 	acceleration += gravity;
 	isTransformUpdated = false;
 	isAABBUpdated = false;
@@ -237,6 +242,7 @@ void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations
 			connectionPosition = rotOffset;
 		}
 	}
+	
 	force = EpsilonVector({ 0,0 });
 }
 
@@ -315,7 +321,7 @@ vector<EpsilonVector> EpsilonBody::GetTransformedVertices()
 	return transformedVertices;
 }
 
-AABB EpsilonBody::GetAABB()
+AABB EpsilonBody::GetAABB(bool isCCD)
 {
 	if (!isAABBUpdated) {
 		float minX = FLT_MAX;
@@ -340,7 +346,17 @@ AABB EpsilonBody::GetAABB()
 			maxY = position.y + radius;
 		}
 		aabb = AABB(minX, maxX, minY, maxY);
+		
+		float dx = linearVelocity.x * deltaTime + acceleration.x * deltaTime * deltaTime * 0.5f;
+		float dy = linearVelocity.y * deltaTime + acceleration.y * deltaTime * deltaTime * 0.5f;
+		ccdAABB.min.x = std::min(aabb.min.x, aabb.min.x + dx);
+		ccdAABB.min.y = std::min(aabb.min.y, aabb.min.y + dy);
+		ccdAABB.max.x = std::max(aabb.max.x, aabb.max.x + dx);
+		ccdAABB.max.y = std::max(aabb.max.y, aabb.max.y + dy);
 	}
 	isAABBUpdated = true;
+	if (isCCD) {	
+		return ccdAABB;
+	}
 	return aabb;
 }

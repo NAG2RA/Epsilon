@@ -47,11 +47,11 @@ int main() {
     const int height = modeGL->height;
     const float zoom = 0.2f;
     EpsilonWorld world(width, height, zoom);
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f, height/2.f), 1.f, 0.5f, 300, 3, true, none));
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f+width/16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, none));
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width / 2.f - width / 16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, none));
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f, height/2.f), 1.f, 0.5f, 300, 0.1f, true, false, none));
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f+width/16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, false, none));
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width / 2.f - width / 16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, false, none));
     world.CreateWater(EpsilonVector(width / 2.f, height / 2.f+height/25.f), 150, 30, 1);
-    GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", monitorGL, NULL);
+    GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", NULL, NULL);
     if (windowGL == NULL) {
         cout << "Failed to create GLFW window" << endl;
         glfwTerminate();
@@ -73,9 +73,13 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        accumulator += deltaTime;
         renderer.Render(world, width, height, zoom);
         InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
-        world.Update(deltaTime, 6);
+        while (accumulator > fixedDt) {
+            world.Update(fixedDt, 6);
+            accumulator -= fixedDt;
+        }
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
         //FrameMark;
