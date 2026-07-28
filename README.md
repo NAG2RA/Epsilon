@@ -13,6 +13,8 @@ The project was built as a deep exploration of physics engine fundamentals, incl
 -   Broad-phase collision detection using AABB pruning
     
 -   Narrow-phase collision detection using SAT
+
+-   Continuous collision detection (CCD) based on time of impact (TOI)
     
 -   Quadtree spatial partitioning
     
