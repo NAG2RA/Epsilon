@@ -253,3 +253,117 @@ void EpsilonRenderer::Render(EpsilonWorld& world, int width, int height, float z
         glDisable(GL_BLEND);
     }
 }
+
+void EpsilonRenderer::RenderDOD(EpsilonWorld& world, int width, int height, float zoom, const float& PPM)
+{
+    allVert.clear();
+    allIndic.clear();
+
+    allVert.reserve(world.GetBodyCount() * 12);
+    allIndic.reserve(world.GetBodyCount() * 6);
+
+    glUseProgram(shaderProgram);
+    glUniform2f(screenSize, static_cast<float>(width), static_cast<float>(height));
+    glUniform1f(zoomGL, zoom);
+
+    // -------------------------------------------------------------
+    // 1. Build Geometry (Boxes & Circles)
+    // -------------------------------------------------------------
+    for (size_t i = 0; i < world.entityList.size(); i++) {
+        if (world.entityList[i].shapetype == box) {
+            Position& pos = world.positions.get(world.entityList[i].id);
+            Vertices vert = world.verts.get(world.entityList[i].id);
+            Angle ang = world.angles.get(world.entityList[i].id);
+            vector<EpsilonVector> v = GetTransformedVertices(pos, vert, ang);
+
+            vector<float> vertices = {
+                v[3].x * PPM, v[3].y * PPM, 0.0f,
+                v[0].x * PPM, v[0].y * PPM, 0.0f,
+                v[1].x * PPM, v[1].y * PPM, 0.0f,
+                v[2].x * PPM, v[2].y * PPM, 0.0f
+            };
+            int offset = static_cast<int>(allVert.size() / 3);
+            vector<int> indices = {
+                offset + 0, offset + 1, offset + 2,
+                offset + 0, offset + 3, offset + 2
+            };
+            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
+
+        }
+        else if (world.entityList[i].shapetype == circle) {
+            Position& pos = world.positions.get(world.entityList[i].id);
+            const float pi = 3.14159265359f;
+            vector<float> vertices;
+            vector<int> indices;
+
+            vertices.push_back(pos.value.x * PPM);
+            vertices.push_back(pos.value.y * PPM);
+            vertices.push_back(0.0f);
+
+            int segments = 20;
+            float rad = world.circles.get(world.entityList[i].id).radius;
+
+            for (int j = 0; j <= segments; j++) {
+                float angle = 2.0f * pi * (float)j / (float)segments;
+                vertices.push_back((pos.value.x + cos(angle) * rad) * PPM);
+                vertices.push_back((pos.value.y + sin(angle) * rad) * PPM);
+                vertices.push_back(0.0f);
+            }
+            int offset = static_cast<int>(allVert.size() / 3);
+            for (int j = 0; j < segments; j++) {
+                indices.push_back(offset + 0);
+                indices.push_back(offset + j + 1);
+                indices.push_back(offset + j + 2);
+            }
+            allVert.insert(allVert.end(), vertices.begin(), vertices.end());
+            allIndic.insert(allIndic.end(), indices.begin(), indices.end());
+        }
+    }
+
+    // Enable Blending for rendering
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // -------------------------------------------------------------
+    // 2. Draw Poly Mesh Vertices
+    // -------------------------------------------------------------
+    if (!allVert.empty()) {
+        glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f); // White for body shapes
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, allVert.size() * sizeof(float), allVert.data(), GL_DYNAMIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, allIndic.size() * sizeof(unsigned int), allIndic.data(), GL_DYNAMIC_DRAW);
+
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(allIndic.size()), GL_UNSIGNED_INT, 0);
+    }
+
+    // -------------------------------------------------------------
+    // 3. Draw Contact Points from debugpos
+    // -------------------------------------------------------------
+    if (!world.debugpos.empty()) {
+        vector<float> debugVerts;
+        debugVerts.reserve(world.debugpos.size() * 3);
+
+        for (const EpsilonVector& v : world.debugpos) {
+            debugVerts.push_back(v.x * PPM);
+            debugVerts.push_back(v.y * PPM);
+            debugVerts.push_back(0.0f);
+        }
+
+        // Upload point data directly to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, debugVerts.size() * sizeof(float), debugVerts.data(), GL_DYNAMIC_DRAW);
+
+        // Set point visual properties
+        glPointSize(8.0f);                            // Make contact points easily visible
+        glUniform4f(colorLoc, 1.0f, 0.0f, 0.0f, 1.0f); // Bright Red color
+
+        // Draw debug points without needing EBO indices
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(world.debugpos.size()));
+    }
+
+    glDisable(GL_BLEND);
+}

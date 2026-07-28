@@ -6,3 +6,9 @@ Water::Water(EpsilonVector surfacePosition, float density, float width, float de
 	depth(depth)
 {
 }
+
+Water::Water(AABB dimensions, float density)
+	:dimensions(dimensions),
+	density(density)
+{
+}

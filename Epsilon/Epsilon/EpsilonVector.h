@@ -1,7 +1,7 @@
 #pragma once
 #include<cmath>
 using namespace std;
-class EpsilonVector
+struct EpsilonVector
 {
 public:
 	float x;

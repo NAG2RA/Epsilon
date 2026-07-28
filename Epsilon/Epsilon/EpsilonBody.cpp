@@ -26,7 +26,7 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	deltaTime(0),
 	force(0, 0),
 	aabb(0, 0, 0, 0),
-	ccdAABB(0,0,0,0),
+	ccdAABB(0, 0, 0, 0),
 	inertia(inertia),
 	inverseMass(mass > 0 ? (float)1 / mass : 0),
 	inverseInertia(inertia > 0 ? (float)1 / inertia : 0),
@@ -34,7 +34,7 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	dynamicFriction(0.6f),
 	staticFriction(0.8f)
 {
-	if (shapetype == Shapetype::box) 
+	if (shapetype == Shapetype::box)
 	{
 		vertices = GetBoxVertices(width, height);
 		transformedVertices.resize(vertices.size());
@@ -65,23 +65,22 @@ EpsilonBody::EpsilonBody(EpsilonVector position, float density, float mass, floa
 	}
 	GetAABB(1);
 	connectionPosition = position;
-	isTransformUpdated = false;
-	isAABBUpdated = false;
+	
 }
 
 EpsilonBody EpsilonBody::CreateNewBody(EpsilonBody body)
 {
-	return EpsilonBody(body.position,body.density,body.mass, body.inertia, body.restitution,body.area,body.radius,body.width,body.height, body.vertices, body.isStatic,body.usingCCD, body.shapetype, body.connectiontype);
+	return EpsilonBody(body.position, body.density, body.mass, body.inertia, body.restitution, body.area, body.radius, body.width, body.height, body.vertices, body.isStatic, body.usingCCD, body.shapetype, body.connectiontype);
 }
 
 EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density, float restitution, float radius, bool isStatic, bool usingCCD, Connectiontype connectiontype)
 {
 	float area = radius * radius * 3.14f;
-	if (area < minArea) 
+	if (area < minArea)
 	{
 		cout << "Area of the EpsilonBody is too small";
 	}
-	else if (area > maxArea) 
+	else if (area > maxArea)
 	{
 		cout << "Area of the EpsilonBody is too big";
 	}
@@ -95,11 +94,11 @@ EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density,
 		cout << "Density of the EpsilonBody is too big, setting density to maximum value";
 		density = maxDensity;
 	}
-	if (restitution > 1) 
+	if (restitution > 1)
 	{
 		restitution = 1;
 	}
-	if(restitution <0)
+	if (restitution < 0)
 	{
 		restitution = 0;
 	}
@@ -113,13 +112,13 @@ EpsilonBody EpsilonBody::CreateCircleBody(EpsilonVector position, float density,
 		mass = area * (float)density;
 		inertia = (1.f / 2.f) * mass * radius * radius;
 	}
-	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic,usingCCD, Shapetype::circle, connectiontype);
+	EpsilonBody bd(position, density, mass, inertia, restitution, area, radius, 0.f, 0.f, {}, isStatic, usingCCD, Shapetype::circle, connectiontype);
 	return bd;
 }
 
 EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, float restitution, float width, float height, bool isStatic, bool usingCCD, Connectiontype connectiontype)
 {
-	
+
 	float area = width * height;
 	if (area < minArea)
 	{
@@ -157,13 +156,13 @@ EpsilonBody EpsilonBody::CreateBoxBody(EpsilonVector position, float density, fl
 		mass = area * (float)density;
 		inertia = (1.f / 12.f) * mass * (width * width + height * height);
 	}
-	vector<EpsilonVector> vertices = GetBoxVertices(width,height);
+	vector<EpsilonVector> vertices = GetBoxVertices(width, height);
 	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, width, height, vertices, isStatic, usingCCD, Shapetype::box, connectiontype);
 	return bd;
 }
-EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic,bool usingCCD, Connectiontype connectiontype)
+EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float density, float restitution, float side, bool isStatic, bool usingCCD, Connectiontype connectiontype)
 {
-	float area = (side*side*sqrt(3))/4;
+	float area = (side * side * sqrt(3)) / 4;
 	if (area < minArea)
 	{
 		cout << "Area of the EpsilonBody is too small";
@@ -199,14 +198,14 @@ EpsilonBody EpsilonBody::CreateTriangleBody(EpsilonVector position, float densit
 	}
 	else {
 		mass = area * (float)density;
-		inertia = (1.f / 36.f)*side*height*height*height;
+		inertia = (1.f / 36.f) * side * height * height * height;
 	}
 	vector<EpsilonVector> vertices = GetTriangleVertices(side);
 	EpsilonBody bd(position, density, mass, inertia, restitution, area, 0.f, side, height, vertices, isStatic, usingCCD, Shapetype::triangle, connectiontype);
 	return bd;
 }
 void EpsilonBody::CreateConnection(EpsilonVector origin) {
-	if (connectiontype == none||isStatic) {
+	if (connectiontype == none || isStatic) {
 		return;
 	}
 	originPosition = origin;
@@ -215,16 +214,15 @@ void EpsilonBody::CreateConnection(EpsilonVector origin) {
 void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations)
 {
 	dt /= iterations;
-	
+
 	deltaTime = dt;
 	position += linearVelocity * dt;
 	acceleration = force * inverseMass;
 	acceleration += gravity;
-	isTransformUpdated = false;
-	isAABBUpdated = false;
-	linearVelocity += acceleration*dt;
+	
+	linearVelocity += acceleration * dt;
 	angle += angularVelocity * dt;
-	position += (acceleration*dt*dt)/2.f;
+	position += (acceleration * dt * dt) / 2.f;
 	if (connectiontype != none) {
 		if (shapetype == box) {
 			EpsilonVector offset(0, -height / 2.f);
@@ -242,25 +240,24 @@ void EpsilonBody::updateMovement(float dt, EpsilonVector gravity, int iterations
 			connectionPosition = rotOffset;
 		}
 	}
-	
+
 	force = EpsilonVector({ 0,0 });
 }
 
 void EpsilonBody::Move(EpsilonVector amount)
 {
-	isTransformUpdated = false;
-	isAABBUpdated = false;
+	
 	position += amount;
 }
 
 vector<EpsilonVector> EpsilonBody::GetBoxVertices(float width, float height)
 {
 	vector<EpsilonVector> vertices(4);
-	float left = -width/2.f;
-	float right = left+width;
-	float bottom = height/2.f;
-	float top = bottom-height;
-	vertices[0] = EpsilonVector(left,top);
+	float left = -width / 2.f;
+	float right = left + width;
+	float bottom = height / 2.f;
+	float top = bottom - height;
+	vertices[0] = EpsilonVector(left, top);
 	vertices[1] = EpsilonVector(right, top);
 	vertices[2] = EpsilonVector(right, bottom);
 	vertices[3] = EpsilonVector(left, bottom);
@@ -272,7 +269,7 @@ vector<EpsilonVector> EpsilonBody::GetTriangleVertices(float side)
 	vector<EpsilonVector> vertices(3);
 	float left = -side / 2.f;
 	float right = left + side;
-	float bottom = height/3.f;
+	float bottom = height / 3.f;
 	float top = bottom - height;
 	vertices[0] = EpsilonVector(0.f, top);
 	vertices[1] = EpsilonVector(left, bottom);
@@ -286,22 +283,20 @@ EpsilonVector EpsilonBody::Transform(EpsilonVector position, EpsilonVector endpo
 	float rx = cos(angle) * position.x - sin(angle) * position.y;
 	float ry = sin(angle) * position.x + cos(angle) * position.y;
 	float tx = rx + endposition.x;
-	float ty =  ry+endposition.y;
-	return EpsilonVector(tx,ty);
+	float ty = ry + endposition.y;
+	return EpsilonVector(tx, ty);
 }
 
 void EpsilonBody::MoveTo(EpsilonVector& pos)
 {
 	position = pos;
-	isTransformUpdated = false;
-	isAABBUpdated = false;
+	
 }
 
 void EpsilonBody::UpdateRotation(float angle)
 {
 	angle += angle;
-	isTransformUpdated = false;
-	isAABBUpdated = false;
+	
 }
 
 void EpsilonBody::AddForce(EpsilonVector amount)
@@ -311,24 +306,24 @@ void EpsilonBody::AddForce(EpsilonVector amount)
 
 vector<EpsilonVector> EpsilonBody::GetTransformedVertices()
 {
-	if (!isTransformUpdated) {
+	
 		EpsilonVector endposition = position;
 		for (size_t i = 0; i < vertices.size(); i++) {
 			EpsilonVector v = vertices[i];
 			transformedVertices[i] = Transform(v, endposition, angle);
 		}
-	}
+	
 	return transformedVertices;
 }
 
 AABB EpsilonBody::GetAABB(bool isCCD)
 {
-	if (!isAABBUpdated) {
+	
 		float minX = FLT_MAX;
 		float minY = FLT_MAX;
 		float maxX = FLT_MIN;
 		float maxY = FLT_MIN;
-		if (shapetype == box||shapetype == triangle) {
+		if (shapetype == box || shapetype == triangle) {
 			vector<EpsilonVector> vertices = GetTransformedVertices();
 			for (size_t i = 0; i < vertices.size(); i++) {
 				EpsilonVector v = vertices[i];
@@ -346,17 +341,240 @@ AABB EpsilonBody::GetAABB(bool isCCD)
 			maxY = position.y + radius;
 		}
 		aabb = AABB(minX, maxX, minY, maxY);
-		
+
 		float dx = linearVelocity.x * deltaTime + acceleration.x * deltaTime * deltaTime * 0.5f;
 		float dy = linearVelocity.y * deltaTime + acceleration.y * deltaTime * deltaTime * 0.5f;
 		ccdAABB.min.x = std::min(aabb.min.x, aabb.min.x + dx);
 		ccdAABB.min.y = std::min(aabb.min.y, aabb.min.y + dy);
 		ccdAABB.max.x = std::max(aabb.max.x, aabb.max.x + dx);
 		ccdAABB.max.y = std::max(aabb.max.y, aabb.max.y + dy);
-	}
-	isAABBUpdated = true;
-	if (isCCD) {	
+	
+	if (isCCD) {
 		return ccdAABB;
 	}
 	return aabb;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+vector<EpsilonVector> GetBoxVertices(Box& b)
+{
+	vector<EpsilonVector> vertices(4);
+	float left = -b.width / 2.f;
+	float right = left + b.width;
+	float bottom = b.height / 2.f;
+	float top = bottom - b.height;
+	vertices[0] = EpsilonVector(left, top);
+	vertices[1] = EpsilonVector(right, top);
+	vertices[2] = EpsilonVector(right, bottom);
+	vertices[3] = EpsilonVector(left, bottom);
+	return vertices;
+}
+vector<EpsilonVector> GetTriangleVertices(Triangle t)
+{
+	float height = (t.side * sqrt(3)) / 2;
+	vector<EpsilonVector> vertices(3);
+	float left = -t.side / 2.f;
+	float right = left + t.side;
+	float bottom = height / 3.f;
+	float top = bottom - height;
+	vertices[0] = EpsilonVector(0.f, top);
+	vertices[1] = EpsilonVector(left, bottom);
+	vertices[2] = EpsilonVector(right, bottom);
+	return vertices;
+}
+
+
+EpsilonVector TransformPoint(EpsilonVector position, EpsilonVector endposition, float angle)
+{
+	float rx = cos(angle) * position.x - sin(angle) * position.y;
+	float ry = sin(angle) * position.x + cos(angle) * position.y;
+	float tx = rx + endposition.x;
+	float ty = ry + endposition.y;
+	return EpsilonVector(tx, ty);
+}
+
+
+vector<EpsilonVector> GetTransformedVertices(Position position, Vertices vertices, Angle angle)
+{
+
+	EpsilonVector endposition = position.value;
+	for (size_t i = 0; i < vertices.vertices.size(); i++) {
+		EpsilonVector v = vertices.vertices[i];
+		vertices.transformedVertices.emplace_back(TransformPoint(v, endposition, angle.value));
+	}
+
+	return vertices.transformedVertices;
+}
+
+AABB GetPolyAABB(Position pos, Vertices vert, Angle ang)
+{
+	AABB aabb;
+	float minX = FLT_MAX;
+	float minY = FLT_MAX;
+	float maxX = FLT_MIN;
+	float maxY = FLT_MIN;
+	
+		vector<EpsilonVector> vertices = GetTransformedVertices(pos,vert,ang);
+		for (size_t i = 0; i < vertices.size(); i++) {
+			EpsilonVector v = vertices[i];
+			if (v.x < minX) { minX = v.x; }
+			if (v.x > maxX) { maxX = v.x; }
+			if (v.y < minY) { minY = v.y; }
+			if (v.y > maxY) { maxY = v.y; }
+
+		}
+	
+	aabb = AABB(minX, maxX, minY, maxY);
+
+	return aabb;
+}
+AABB GetPolySweptAABB(Transform t, Position pos, Vertices vert, Angle ang, float deltaTime)
+{
+	AABB aabb;
+	AABB ccdAABB;
+	float minX = FLT_MAX;
+	float minY = FLT_MAX;
+	float maxX = FLT_MIN;
+	float maxY = FLT_MIN;
+
+	vector<EpsilonVector> vertices = GetTransformedVertices(pos, vert, ang);
+	for (size_t i = 0; i < vertices.size(); i++) {
+		EpsilonVector v = vertices[i];
+		if (v.x < minX) { minX = v.x; }
+		if (v.x > maxX) { maxX = v.x; }
+		if (v.y < minY) { minY = v.y; }
+		if (v.y > maxY) { maxY = v.y; }
+
+	}
+
+	aabb = AABB(minX, maxX, minY, maxY);
+
+	float dx = t.velocity.x * deltaTime + t.acceleration.x * deltaTime * deltaTime * 0.5f;
+	float dy = t.velocity.y * deltaTime + t.acceleration.y * deltaTime * deltaTime * 0.5f;
+	ccdAABB.min.x = std::min(aabb.min.x, aabb.min.x + dx);
+	ccdAABB.min.y = std::min(aabb.min.y, aabb.min.y + dy);
+	ccdAABB.max.x = std::max(aabb.max.x, aabb.max.x + dx);
+	ccdAABB.max.y = std::max(aabb.max.y, aabb.max.y + dy);
+
+	
+		return ccdAABB;
+	
+	
+}
+AABB GetCircleAABB(Position pos, Circle c)
+{
+	AABB aabb;
+	
+	float minX = FLT_MAX;
+	float minY = FLT_MAX;
+	float maxX = FLT_MIN;
+	float maxY = FLT_MIN;
+
+	minX = pos.value.x - c.radius;
+	maxX = pos.value.x + c.radius;
+	minY = pos.value.y - c.radius;
+	maxY = pos.value.y + c.radius;
+
+	aabb = AABB(minX, maxX, minY, maxY);
+	return aabb;
+}
+void UpdatePolyAABB(AABB& aabb, Position pos, Vertices vert, Angle ang) {
+	float minX = FLT_MAX;
+	float minY = FLT_MAX;
+	float maxX = FLT_MIN;
+	float maxY = FLT_MIN;
+
+	vector<EpsilonVector> vertices = GetTransformedVertices(pos, vert, ang);
+	for (size_t i = 0; i < vertices.size(); i++) {
+		EpsilonVector v = vertices[i];
+		if (v.x < minX) { minX = v.x; }
+		if (v.x > maxX) { maxX = v.x; }
+		if (v.y < minY) { minY = v.y; }
+		if (v.y > maxY) { maxY = v.y; }
+	}
+	aabb.min.x = minX;
+	aabb.max.x = maxX;
+	aabb.min.y = minY;
+	aabb.max.y = maxY;
+}
+void UpdateCircleAABB(AABB& aabb, Position pos, Circle c) {
+	aabb.min.x = pos.value.x - c.radius;
+	aabb.max.x = pos.value.x + c.radius;
+	aabb.min.y = pos.value.y - c.radius;
+	aabb.max.y = pos.value.y + c.radius;
 }

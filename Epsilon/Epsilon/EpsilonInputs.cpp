@@ -17,7 +17,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
                 float targetNDC_Y = mouseNDC_Y * zoom;
                 float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
                 float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 4, 4, false, false, none));
+                world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 1000, 0.5f, 4, 4, false, false, none));
             }
             else if (contype == 1) {
                 double xpos, ypos;
@@ -192,7 +192,7 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
             float targetNDC_Y = mouseNDC_Y * zoom;
             float spawnX = ((targetNDC_X + 1.0f) / 2.0f) * width;
             float spawnY = ((1.0f - targetNDC_Y) / 2.0f) * height;
-            world.AddBody(EpsilonBody::CreateCircleBody(EpsilonVector(spawnX, spawnY), 1.5f, 0.5f, 1, false, false, none));
+            world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(spawnX, spawnY), 0.7f, 0.5f, 4, 4, false, false, none));
             timer = 0.02f;
         }
     }
@@ -201,6 +201,88 @@ void InputsGL(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& is
     }
     else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
         cout << world.GetBodyCount() << endl;
+    }
+    else {
+        ispressed = false;
+    }
+}
+void InputsDOD(EpsilonWorld& world, GLFWwindow* window, float deltatime, bool& ispressed, int& contype, float& timer, EpsilonVector& origin, int width, int height, float zoom, const float& PPM) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        if (!ispressed) {
+
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+            float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+            float targetNDC_X = mouseNDC_X * zoom;
+            float targetNDC_Y = mouseNDC_Y * zoom;
+            float spawnX_px = ((targetNDC_X + 1.0f) / 2.0f) * width;
+            float spawnY_px = ((1.0f - targetNDC_Y) / 2.0f) * height;
+
+            // convert pixel-space spawn position into physics meters
+            float spawnX = spawnX_px / PPM;
+            float spawnY = spawnY_px / PPM;
+
+            Position pos;
+            pos.value = EpsilonVector(spawnX, spawnY);
+            Angle ang;
+            ang.value = 0;
+            CreateDynamicBox(world, pos, ang, 1, 1, 1000, 0.4, 0.9, 0.5);
+        }
+        ispressed = true;
+    }
+    else  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        if (!ispressed) {
+
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+            float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+            float targetNDC_X = mouseNDC_X * zoom;
+            float targetNDC_Y = mouseNDC_Y * zoom;
+            float spawnX_px = ((targetNDC_X + 1.0f) / 2.0f) * width;
+            float spawnY_px = ((1.0f - targetNDC_Y) / 2.0f) * height;
+
+            // convert pixel-space spawn position into physics meters
+            float spawnX = spawnX_px / PPM;
+            float spawnY = spawnY_px / PPM;
+
+            Position pos;
+            pos.value = EpsilonVector(spawnX, spawnY);
+            Angle ang;
+            ang.value = 0;
+            CreateDynamicCircle(world, pos, ang, 0.2, 1000, 1, 1, 0.5);
+        }
+        ispressed = true;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+        timer -= deltatime;
+        if (timer <= 0) {
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            float mouseNDC_X = (xpos / width) * 2.0f - 1.0f;
+            float mouseNDC_Y = 1.0f - (ypos / height) * 2.0f; // Inverted Y
+            float targetNDC_X = mouseNDC_X * zoom;
+            float targetNDC_Y = mouseNDC_Y * zoom;
+            float spawnX_px = ((targetNDC_X + 1.0f) / 2.0f) * width;
+            float spawnY_px = ((1.0f - targetNDC_Y) / 2.0f) * height;
+
+            float spawnX = spawnX_px / PPM;
+            float spawnY = spawnY_px / PPM;
+
+            Position pos;
+            pos.value = EpsilonVector(spawnX, spawnY);
+            Angle ang;
+            ang.value = 0;
+            CreateDynamicBox(world, pos, ang, 0.2, 0.2, 1000, 1, 1, 0.5);
+            timer = 0.02f;
+        }
+    }
+    else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        cout << world.entityList.size() << endl;
     }
     else {
         ispressed = false;

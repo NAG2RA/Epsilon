@@ -45,11 +45,21 @@ int main() {
     const GLFWvidmode* modeGL = glfwGetVideoMode(monitorGL);
     const int width = modeGL->width;
     const int height = modeGL->height;
-    const float zoom = 0.2f;
-    EpsilonWorld world(width, height, zoom);
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f, height/2.f), 1.f, 0.5f, 300, 0.1f, true, false, none));
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f+width/16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, false, none));
-    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width / 2.f - width / 16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, false, none));
+    const int worldWidth = 10000;
+	const int worldHeight = 10000;
+    const float PPM = 64.f;
+    const float zoom = 1.f;
+    EpsilonWorld world(width, height, worldWidth, worldHeight, zoom);
+    world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f, height/2.f), 1.f, 0.5f, 10, 1, true, false, none));
+    //world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width/2.f+width/16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, false, none));
+    //world.AddBody(EpsilonBody::CreateBoxBody(EpsilonVector(width / 2.f - width / 16.f, height / 2.f), 1.f, 0.5f, 3, 300, true, false, none));
+    Entity ent2;
+    Position pos2;
+    pos2.value = EpsilonVector(width/(2.f*PPM), 900/PPM);
+    Angle ang2;
+    ang2.value = 0;
+    AddStaticBox(world, ent2, pos2, ang2, 10, 1, 1000, 0.5, 0.9, 0.5);
+   
     world.CreateWater(EpsilonVector(width / 2.f, height / 2.f+height/25.f), 150, 30, 1);
     GLFWwindow* windowGL = glfwCreateWindow(width, height, "Epsilon", NULL, NULL);
     if (windowGL == NULL) {
@@ -67,22 +77,34 @@ int main() {
     renderer.Initialize();
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
+    
     while (!glfwWindowShouldClose(windowGL)) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+        int counter = 0;
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         accumulator += deltaTime;
-        renderer.Render(world, width, height, zoom);
-        InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
-        while (accumulator > fixedDt) {
-            world.Update(fixedDt, 6);
+        //renderer.Render(world, width, height, zoom);
+        renderer.RenderDOD(world, width, height, zoom, PPM);
+        //InputsGL(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom);
+        InputsDOD(world, windowGL, deltaTime, ispressed, contype, timer, origin, width, height, zoom, PPM);
+        while (accumulator > fixedDt&&counter<3) {
+            //world.Update(fixedDt, 6);
+            WorldStep(world, fixedDt, 8);
             accumulator -= fixedDt;
+            counter++;
         }
+        
+        if (counter >= 3) {
+            accumulator = 0;
+        }
+
+       
         glfwSwapBuffers(windowGL);
         glfwPollEvents();
-        //FrameMark;
+        FrameMark;
     }
    
     glfwTerminate();

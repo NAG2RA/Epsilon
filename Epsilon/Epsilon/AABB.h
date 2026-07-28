@@ -2,7 +2,7 @@
 #include<cmath>
 #include"EpsilonVector.h"
 using namespace std;
-class AABB 
+struct AABB 
 {
 public:
 	EpsilonVector min, max;

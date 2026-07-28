@@ -11,7 +11,10 @@
 #include"CollisionManifold.h"
 #include"EpsilonVector.h"
 #include"Water.h"
-class QuadTree {
+
+
+
+struct QuadTree {
 public:
 	int nodeCapacity;
 	AABB aabb;
@@ -26,7 +29,7 @@ public:
 	}
 	void query(AABB area, vector<int>& found, vector<EpsilonBody>& list) {
 
-		if (!Collisions::IntersectAABB(area, aabb)) {
+		if (!IntersectAABB(area, aabb)) {
 			return;
 		}
 
@@ -37,7 +40,7 @@ public:
 			se->query(area, found, list);
 		}
 		for (int i = 0; i < bodies.size(); i++) {
-			if (Collisions::IntersectAABB(area, list[bodies[i]].GetAABB(list[bodies[i]].usingCCD))) {
+			if (IntersectAABB(area, list[bodies[i]].GetAABB(list[bodies[i]].usingCCD))) {
 				found.push_back(bodies[i]);
 			}
 		}
@@ -45,7 +48,7 @@ public:
 
 	bool insert(EpsilonBody& body, vector<EpsilonBody>& list, int index) {
 
-		if (!Collisions::IntersectAABB(aabb, body.GetAABB(body.usingCCD))) {
+		if (!IntersectAABB(aabb, body.GetAABB(body.usingCCD))) {
 			return false;
 		}
 
@@ -57,10 +60,10 @@ public:
 			subdivide(list);
 		}
 
-		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), nw->aabb)) return nw->insert(body, list, index);
-		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), ne->aabb)) return ne->insert(body, list, index);
-		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), sw->aabb)) return sw->insert(body, list, index);
-		if (Collisions::ContainsAABB(body.GetAABB(body.usingCCD), se->aabb)) return se->insert(body, list, index);
+		if (ContainsAABB(body.GetAABB(body.usingCCD), nw->aabb)) return nw->insert(body, list, index);
+		if (ContainsAABB(body.GetAABB(body.usingCCD), ne->aabb)) return ne->insert(body, list, index);
+		if (ContainsAABB(body.GetAABB(body.usingCCD), sw->aabb)) return sw->insert(body, list, index);
+		if (ContainsAABB(body.GetAABB(body.usingCCD), se->aabb)) return se->insert(body, list, index);
 		bodies.push_back(index);
 		return true;
 	}
@@ -85,14 +88,20 @@ private:
 		}
 	}
 };
-class Island {
+
+
+
+struct Island {
 public:
 	vector<int> bodyIndices;
 	int sleepTimer;
 	bool isAsleep = false;
 	vector<CollisionManifold> manifolds;
 };
-class DSU {
+
+
+
+struct DSU {
 public:
 	vector<int> parent;
 	DSU(int n) {
@@ -109,14 +118,15 @@ public:
 		if (root_i != root_j) parent[root_i] = root_j;
 	}
 };
-class EpsilonWorld
+
+
+
+struct EpsilonWorld
 {
 public:
 	enki::TaskScheduler scheduler;
-	mutex mtx;
-	condition_variable cv;
 	void RunTask(uint32_t count, std::function<void(uint32_t, uint32_t, uint32_t)> func);
-	EpsilonWorld(int windowWidth,int windowHeight, float zoom);
+	EpsilonWorld(int windowWidth, int windowHeight, int worldWidth, int worldHeight, float zoom);
 	int GetBodyCount();
 	int GetWaterCount();
 	void AddBody(EpsilonBody body);
@@ -129,44 +139,73 @@ public:
 	EpsilonBody GetBody(float index);
 	Water GetWater(int index);
 	EpsilonBody GetDynamicBody(float index);
-private:
+	vector<Entity> entityList;
+	vector<Entity> dynamicEntities;
+	vector<Entity> staticEntities;
+	vector<EpsilonVector> debugpos;
+	SparseSet<Transform> transforms;
+	SparseSet<Position> positions;
+	SparseSet<AABB> aabbs;
+	SparseSet<Angle> angles;
+	SparseSet<AngularVelocity> angVelocities;
+	SparseSet<inverseSim> invSims;
+	SparseSet<FrictionAndRestitution> frictionsAndResitutions;
+	SparseSet<Vertices> verts;
+	//vector<IslandDOD> dodislands;
+	float sleepThreshold = 2.f;
+	int windowWidth, windowHeight;
+	int worldWidth, worldHeight;
+	float zoom;
+	vector<vector<int>> contactPairs;
+	vector<vector<Entity>> contactPairsDOD;
+	vector<int> idToIndex;
+	SparseSet<Circle> circles;
+	map<vector<int>, CollisionManifold> prevManifolds;
+	vector<ImpulseCache> prevManifoldsDOD;
+	vector<CollisionManifoldDOD> manifolds;
+	SparseSet<Transform> pseudoVels;
+	SparseSet<AngularVelocity> pseudoAngVels;
+	EpsilonVector gravity;
 	float airResistanceConstant;
 	float rotationalAirResistanceConstant;
+private:
 	float springConstant, damperConstant, damperThreadConstant, damperWaterConstant;
 	float depth;
-	float zoom;
 	float angularVelocityThreshold;
 	float linearVelocityThreshold;
-	int windowWidth, windowHeight;
-	EpsilonVector gravity;
 	EpsilonVector normal;
 	vector<Water> waterList;
 	vector<EpsilonBody> bodyList;
 	vector<int> dynamicBodyList;
 	vector<int> nonStaticBodies;
-	vector<vector<int>> contactPairs;
 	vector<int> potentialColliders;
 	vector<int> ccdBodies;
 	vector<Island> islands;
-	map<vector<int>, CollisionManifold> prevManifolds;
 	void PreFiltering(float dt);
 	void UpdateMovement(uint32_t start, uint32_t end, float dt, int iterations);
-	void SeparateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv,float depth);
+	void SeparateBodies(EpsilonBody& bodyA, EpsilonBody& bodyB, EpsilonVector mtv, float depth);
 	void BroadPhase(int windowWidth = 1280, int windowHeight = 720, float zoom = 1.f);
 	float TimeOfImpact(float dt, EpsilonBody& A, EpsilonBody& B, float& depth, EpsilonVector& normal);
 	void resolveCCDCollisions(float& dt, int iterations);
-	void NarrowPhase(int start, int end,float dt);
+	void NarrowPhase(int start, int end, float dt);
 	void BuildIslands();
-	void SolveIslands(int start, int end,float dt, int iterations);
+	void SolveIslands(int start, int end, float dt, int iterations);
 	void ResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveCollisonWithRotation(CollisionManifold& manifold);
 	void ResolveCollisonWithRotationAndFriction(CollisionManifold& manifold);
 	void ZoZoResolveCollisonBasic(CollisionManifold& manifold);
 	void ResolveThreadConnection(int start, int end);
-	void ResolveSpringConnection(int start, int end,float dt, int iterations);
+	void ResolveSpringConnection(int start, int end, float dt, int iterations);
 	void Buoyancy(int start, int end);
-	
+
 	void AirResistance(int start, int end, float dt, int iterations);
 
 };
 
+
+void WorldStep(EpsilonWorld& world, float dt, float iterations);
+int AddStaticBox(EpsilonWorld& world, Entity& ent, Position& pos, Angle& angle, float width, float height, float density, float dynamicFriction, float staticFriction, float restitution);
+int AddDynamicBox(EpsilonWorld& world, Entity& ent, Position& pos, Angle& angle, float width, float height, float density, float dynamicFriction, float staticFriction, float restitution);
+int CreateDynamicBox(EpsilonWorld& world, Position& pos, Angle& angle, float width, float height, float density, float dynamicFriction, float staticFriction, float restitution);
+
+int CreateDynamicCircle(EpsilonWorld& world, Position& pos, Angle& angle, float radius, float density, float dynamicFriction, float staticFriction, float restitution);

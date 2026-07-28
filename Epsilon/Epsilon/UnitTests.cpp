@@ -38,8 +38,8 @@ void UnitTestVector()
         EpsilonVector v(5, 10);
         EpsilonVector r = v * 0.0f;
 
-        assert(Collisions::NearlyEqual(r.x, 0));
-        assert(Collisions::NearlyEqual(r.x, 0));
+        assert(NearlyEqual(r.x, 0));
+        assert(NearlyEqual(r.x, 0));
     }
 }
 
@@ -50,37 +50,37 @@ void UnitTestAABB()
         AABB b(EpsilonVector(1, 1), EpsilonVector(3, 3));
         AABB c(EpsilonVector(0, 0), EpsilonVector(1, 1));
         AABB d(EpsilonVector(1, 0), EpsilonVector(2, 1));
-        assert(Collisions::IntersectAABB(a, b) && Collisions::IntersectAABB(c, d));
+        assert(IntersectAABB(a, b) && IntersectAABB(c, d));
     }
 
     {
         AABB a(EpsilonVector( 1,1 ), EpsilonVector( 1,1 ));
         AABB b(EpsilonVector( 0,0 ), EpsilonVector( 2,2 ));
-        assert(Collisions::IntersectAABB(a, b));
+        assert(IntersectAABB(a, b));
     }
 
     {
         AABB a(EpsilonVector(0, 0), EpsilonVector(1, 1));
         AABB b(EpsilonVector(1, 1), EpsilonVector(2, 2));
-        assert(Collisions::IntersectAABB(a, b));
+        assert(IntersectAABB(a, b));
     }
 
     {
         AABB a(EpsilonVector(0, 0), EpsilonVector(10, 10));
         AABB b(EpsilonVector(3, 3), EpsilonVector(5, 5));
-        assert(Collisions::IntersectAABB(a, b)&&Collisions::ContainsAABB(a,b));
+        assert(IntersectAABB(a, b)&&ContainsAABB(a,b));
     }
 
     {
         AABB a(EpsilonVector(0, 0), EpsilonVector(100, 1e-6f));
         AABB b(EpsilonVector(50, -1), EpsilonVector(60, 1));
-        assert(Collisions::IntersectAABB(a, b));
+        assert(IntersectAABB(a, b));
     }
 
     {
         AABB a(EpsilonVector(-10, -10), EpsilonVector(-1, -1));
         AABB b(EpsilonVector(-5, -5), EpsilonVector(5, 5));
-        assert(Collisions::IntersectAABB(a, b));
+        assert(IntersectAABB(a, b));
     }
 
     {
@@ -88,7 +88,7 @@ void UnitTestAABB()
         AABB b(EpsilonVector(3, 3), EpsilonVector(1, 1));
         AABB c(EpsilonVector(1, 1), EpsilonVector(0, 0));
         AABB d(EpsilonVector(2, 1), EpsilonVector(1, 0));
-        assert(Collisions::IntersectAABB(a, b) && Collisions::IntersectAABB(c, d));
+        assert(IntersectAABB(a, b) && IntersectAABB(c, d));
     }
 }
 
@@ -98,7 +98,7 @@ void UnitTestUpdateMovement() {
         float dt = 1.0f;
         EpsilonVector gravity(0, 9.8f);
         bd.updateMovement(dt, gravity, 1);
-        assert(Collisions::NearlyEqual(bd.position.y, 4.9f));
+        assert(NearlyEqual(bd.position.y, 4.9f));
     }
 
     {
@@ -125,7 +125,7 @@ void UnitTestUpdateMovement() {
         EpsilonVector gravity(0, 0);
         bd.linearVelocity = EpsilonVector(3, 4);
         bd.updateMovement(dt, gravity, 1);
-        assert(Collisions::NearlyEqual(bd.position.x,3)&& Collisions::NearlyEqual(bd.position.y, 4));
+        assert(NearlyEqual(bd.position.x,3)&& NearlyEqual(bd.position.y, 4));
     }
 
     {
@@ -135,6 +135,6 @@ void UnitTestUpdateMovement() {
         bd.linearVelocity = EpsilonVector(3, 4);
         bd.position = EpsilonVector(5, 5);
         bd.updateMovement(dt, gravity, 1);
-        assert(Collisions::NearlyEqual(bd.position.x, 5) && Collisions::NearlyEqual(bd.position.y, 5));
+        assert(NearlyEqual(bd.position.x, 5) && NearlyEqual(bd.position.y, 5));
     }
 }
