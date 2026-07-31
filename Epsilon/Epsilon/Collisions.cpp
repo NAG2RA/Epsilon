@@ -228,7 +228,7 @@ void FindPolygonsContactPointsClipped(
         if (t0 > t1) std::swap(clipped[0], clipped[1]);
     }
 
-    float maxAllowedSeparation = 0.01f;
+    float maxAllowedSeparation = 0.009f;
 
     float refFaceOffset = refNormal.Dot(refA);
     float sep1;

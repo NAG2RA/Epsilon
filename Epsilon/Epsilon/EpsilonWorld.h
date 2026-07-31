@@ -119,7 +119,10 @@ public:
 	}
 };
 
-
+struct IslandDOD {
+public:
+	vector<int> EntityIds;
+};
 
 struct EpsilonWorld
 {
@@ -151,8 +154,9 @@ public:
 	SparseSet<inverseSim> invSims;
 	SparseSet<FrictionAndRestitution> frictionsAndResitutions;
 	SparseSet<Vertices> verts;
-	//vector<IslandDOD> dodislands;
-	float sleepThreshold = 2.f;
+	vector<IslandDOD> dodislands;
+	int activeObjectCount = 0;
+	float sleepThreshold = 0.4f;
 	int windowWidth, windowHeight;
 	int worldWidth, worldHeight;
 	float zoom;

@@ -130,6 +130,12 @@ struct SparseSet {
 		sparse[index] = dense.size() - 1;
 		entities.emplace_back(index);
 	}
+	void Swap(int denseIndexA, int denseIndexB) {
+		std::swap(dense[denseIndexA], dense[denseIndexB]);
+		std::swap(entities[denseIndexA], entities[denseIndexB]);
+		sparse[entities[denseIndexA]] = denseIndexA;
+		sparse[entities[denseIndexB]] = denseIndexB;
+	}
 	void remove(int index) {
 		int target_dense_idx = sparse[index];
 		if (target_dense_idx == -1) return; // Guard against bad index

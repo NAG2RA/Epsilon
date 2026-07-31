@@ -903,6 +903,7 @@ int AddDynamicBox(EpsilonWorld& world, Entity& ent, Position& pos, Angle& angle,
 	world.idToIndex.emplace_back(ent.id);
 	world.dynamicEntities.emplace_back(ent);
 	world.positions.Add(pos, world.entityList.size() - 1, world.entityList.size());
+	world.activeObjectCount++;
 	Box b{ width,height };
 	Vertices v;
 	v.vertices = GetBoxVertices(b);
@@ -930,6 +931,7 @@ int CreateDynamicBox(EpsilonWorld& world, Position& pos, Angle& angle, float wid
 	world.entityList.emplace_back(ent);
 	world.idToIndex.emplace_back(ent.id);
 	world.dynamicEntities.emplace_back(ent);
+	world.activeObjectCount++;
 	world.positions.Add(pos, world.entityList.size() - 1, world.entityList.size());
 	Box b{ width,height };
 	Vertices v;
@@ -959,6 +961,7 @@ int CreateDynamicCircle(EpsilonWorld& world, Position& pos, Angle& angle, float 
 	world.entityList.emplace_back(ent);
 	world.idToIndex.emplace_back(ent.id);
 	world.dynamicEntities.emplace_back(ent);
+	world.activeObjectCount++;
 	world.positions.Add(pos, world.entityList.size() - 1, world.entityList.size());
 	Circle c{ radius };
 	world.circles.Add(c, world.entityList.size() - 1, world.entityList.size());
@@ -1435,75 +1438,107 @@ void Solver(EpsilonWorld& world, int start, int end, float dt) {
 	}*/
 }
 
-//struct IslandDOD {
-//public:
-//	vector<int> EntityIds;
-//};
-//void BuildIslands(vector<IslandDOD> islands, float vectorSize, vector<vector<int>> contactPairs)
-//{
-//	int n = vectorSize;
-//	DSU dsu(n);
-//
-//	for (int i = 0; i < contactPairs.size(); i++) {
-//		dsu.unite(contactPairs[i][0], contactPairs[i][1]);
-//	}
-//
-//	std::unordered_map<int, int> rootToIslandIdx;
-//	islands.clear();
-//
-//	for (int i = 0; i < n; i++) {
-//
-//		int root = dsu.find(i);
-//		if (rootToIslandIdx.find(root) == rootToIslandIdx.end()) {
-//			rootToIslandIdx[root] = islands.size();
-//			islands.emplace_back();
-//		}
-//		islands[rootToIslandIdx[root]].EntityIds.emplace_back(i);
-//	}
-//
-//}
-//
-//void SolveIslands(EpsilonWorld& world, int start, int end, float dt, int iterations)
-//{
-//
-//	for (int i = start; i < end; ++i) {
-//		IslandDOD& island = world.dodislands[i];
-//
-//		float maxEnergy = 0.0f;
-//		for (int bIdx : island.EntityIds) {
-//			float energy = world.transforms.get(bIdx).velocity.LengthSquared() + (world.angVelocities.get(bIdx).value * world.angVelocities.get(bIdx).value);
-//			if (energy > maxEnergy) maxEnergy = energy;
-//		}
-//		int sleep = 1;
-//		
-//
-//		if (maxEnergy < 2.f) {
-//			for (int bIdx : island.EntityIds) {
-//				world.entityList[bIdx].sleepTimer += dt / iterations;
-//				if (world.entityList[bIdx].sleepTimer < world.sleepThreshold) {
-//					sleep = -1;
-//				}
-//			}
-//		}
-//		else {
-//			sleep = -1;
-//			for (int bIdx : island.EntityIds) {
-//				world.entityList[bIdx].sleepTimer = 0.0f;
-//			}
-//		}
-//
-//		if (sleep == 1) {
-//			for (int bIdx : island.EntityIds) {
-//				//move to back of the list, threshold--;
-//			}
-//		}
-//		else if (sleep == -1) {
-//			for (int bIdx : island.EntityIds) {
-//				//move to the front of the list, threshold++;
-//			}
-//		}
-//	}
-//}
+
+void BuildIslands(EpsilonWorld& world)
+{
+	int n = world.entityList.size();
+	DSU dsu(n);
+
+	for (int i = 0; i < world.contactPairs.size(); i++) {
+		Entity entityA = world.entityList[world.idToIndex[world.contactPairs[i][0]]];
+		Entity entityB = world.entityList[world.idToIndex[world.contactPairs[i][1]]];
+		if(world.transforms.sparse[entityB.id] == -1 || world.transforms.sparse[entityA.id] == -1)
+			continue;
+		dsu.unite(world.entityList[world.idToIndex[world.contactPairs[i][0]]].id, world.entityList[world.idToIndex[world.contactPairs[i][1]]].id);
+	}
+
+	std::unordered_map<int, int> rootToIslandIdx;
+	world.dodislands.clear();
+
+	for (int i = 0; i < n; i++) {
+		Entity entity = world.entityList[i];
+		if (world.transforms.sparse[entity.id] == -1) continue;
+		int root = dsu.find(i);
+		if (rootToIslandIdx.find(root) == rootToIslandIdx.end()) {
+			rootToIslandIdx[root] = world.dodislands.size();
+			world.dodislands.emplace_back();
+		}
+		world.dodislands[rootToIslandIdx[root]].EntityIds.emplace_back(i);
+	}
+
+}
+void PutEntityToSleep(EpsilonWorld& world, const int& entityId) {
+	int idx = world.transforms.getInternalIndex(entityId);
+	if (idx >= world.activeObjectCount) return; // already asleep
+
+	int lastActive = world.activeObjectCount - 1;
+
+	// swap this entity with the last active slot across every array
+	// that's iterated in parallel (synchronized) fashion
+	world.transforms.Swap(idx, lastActive);
+	world.angVelocities.Swap(idx, lastActive);
+	world.pseudoVels.Swap(idx, lastActive);
+	world.pseudoAngVels.Swap(idx, lastActive);
+	// add any other array that UpdateMovement/gravity/etc. index by the same `i`
+
+	world.activeObjectCount--;
+}
+
+void WakeEntity(EpsilonWorld& world, const int& entityId) {
+	int idx = world.transforms.getInternalIndex(entityId);
+	if (idx < world.activeObjectCount) return; // already awake
+
+	int firstSleeping = world.activeObjectCount;
+
+	world.transforms.Swap(idx, firstSleeping);
+	world.angVelocities.Swap(idx, firstSleeping);
+	world.pseudoVels.Swap(idx, firstSleeping);
+	world.pseudoAngVels.Swap(idx, firstSleeping);
+
+	world.activeObjectCount++;
+}
+void SolveIslands(EpsilonWorld& world, int start, int end, float dt, int iterations)
+{
+
+	for (int i = start; i < end; ++i) {
+		IslandDOD& island = world.dodislands[i];
+
+		float maxEnergy = 0.0f;
+		for (int bIdx : island.EntityIds) {
+			float energy = world.transforms.get(bIdx).velocity.LengthSquared() + (world.angVelocities.get(bIdx).value * world.angVelocities.get(bIdx).value);
+			if (energy > maxEnergy) maxEnergy = energy;
+		}
+		int sleep = 1;
+		
+
+		if (maxEnergy < 0.8f) {
+			for (int bIdx : island.EntityIds) {
+				world.entityList[bIdx].sleepTimer += dt / iterations;
+				if (world.entityList[bIdx].sleepTimer < world.sleepThreshold) {
+					sleep = -1;
+				}
+			}
+		}
+		else {
+			sleep = -1;
+			for (int bIdx : island.EntityIds) {
+				world.entityList[bIdx].sleepTimer = 0.0f;
+			}
+		}
+
+		if (sleep == 1) {
+			for (int bIdx : island.EntityIds) {
+				PutEntityToSleep(world, world.entityList[bIdx].id);
+			}
+		}
+		else if (sleep == -1) {
+			for (int bIdx : island.EntityIds) {
+				WakeEntity(world, world.entityList[bIdx].id);
+			}
+		}
+	}
+}
+
 
 void UpdateMovement(uint32_t start, uint32_t end, EpsilonWorld& world, float dt, int iterations) {
 	ZoneScoped;
@@ -1579,9 +1614,9 @@ void ResolveCollisonWithRotationAndFriction(EpsilonWorld& world, CollisionManifo
 	float df = (fA.dynamicFriction + fB.dynamicFriction) * 0.5f;
 	float slop = 0.001f;
 	float beta = 0.3f;
-	float maxBiasSpeed = 2.0f; // Limit position correction speed (m/s)
+	//float maxBiasSpeed = 2.0f; // Limit position correction speed (m/s)
 	float bias = (beta / dt) * max(0.0f, manifold.depth - slop);
-	float linearDamping = 0.999f;
+	float linearDamping = 1.0f;
 	float angularDamping = 1.0f;
 	// ==========================================
 	// 1. SOLVE NORMAL IMPULSES & PENETRATION
@@ -1864,13 +1899,12 @@ void WorldStep(EpsilonWorld& world, float dt, float iterations) {
 	g_frameCounter++;
 	world.contactPairs.clear();
 	world.manifolds.clear();
-
+	world.dodislands.clear();
 	BroadPhase(world);
+	BuildIslands(world);
+	SolveIslands(world, 0, world.dodislands.size(), dt, iterations);
 	NarrowPhase(world, dt);
-	std::sort(world.manifolds.begin(), world.manifolds.end(),
-		[](const CollisionManifoldDOD& a, const CollisionManifoldDOD& b) {
-			return min(a.entityA_ID, a.entityB_ID) < min(b.entityA_ID, b.entityB_ID);
-		});
+	
 	
 	
 		
@@ -1882,11 +1916,11 @@ void WorldStep(EpsilonWorld& world, float dt, float iterations) {
 			PositionSolver(world, start, end, dt);
 			});
 	}*/
-	RunTask(world, world.transforms.Size() - 1, [&world, &dt](uint32_t start, uint32_t end, uint32_t threadNum) {
-		UpdateMovement(start + 1, end + 1, world, dt, 1);
-		});
+	
+			UpdateMovement(1, world.activeObjectCount, world, dt, 1);
+		
 
-	RunTask(world, world.transforms.Size() - 1, [&world, &dt](uint32_t start, uint32_t end, uint32_t threadNum) {
+	/*RunTask(world, world.transforms.Size() - 1, [&world, &dt](uint32_t start, uint32_t end, uint32_t threadNum) {
 		AirResistance(start + 1, end + 1, dt, 1, world);
-		});
+		});*/
 }
